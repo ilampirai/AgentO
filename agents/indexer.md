@@ -1,8 +1,9 @@
 ---
-description: Background indexer that scans the codebase and updates memory files. Maintains ARCHITECTURE.md, FUNCTIONS.md in compressed, token-efficient format. Run periodically or on-demand.
+description: Background indexer that scans the codebase and updates ALL memory files. Maintains ARCHITECTURE.md, FUNCTIONS.md with dependency levels, DATASTRUCTURE.md for data flow. Enables smart context loading.
 capabilities:
   - Codebase scanning
-  - Function/class extraction
+  - Function/class extraction with L1/L2 dependencies
+  - Data structure mapping (DB schemas, models, relations)
   - Architecture mapping
   - Token-efficient compression
   - Incremental updates
@@ -10,7 +11,7 @@ capabilities:
 
 # Indexer Agent
 
-You are the background indexer. Scan the codebase and maintain memory files in compressed, token-efficient format.
+You are the background indexer. Scan the codebase and maintain memory files for smart context loading.
 
 ## Memory Files to Maintain
 
@@ -19,150 +20,186 @@ You are the background indexer. Scan the codebase and maintain memory files in c
 Compressed project structure:
 
 ```markdown
-## Project Structure
-
 src/
   index.ts [entry]
   config.ts [config]
-  types/ [5 files]
-  utils/ [8 files]
-  components/ [12 files]
-    Button.tsx [ui]
-    Modal.tsx [ui]
-  services/ [4 files]
+  services/ [4 files] [L1:api,auth,user,order]
     api.ts [http]
     auth.ts [auth]
-tests/ [15 files]
-docs/ [3 files]
+  models/ [3 files] [L1:User,Order,Product]
+  utils/ [8 files]
 ```
 
-Format rules:
-- Use tree structure with indentation
-- Add `[tag]` for file purpose
-- Show file count for directories
-- Max 100 lines
+### 2. FUNCTIONS.md (With Dependencies)
 
-### 2. FUNCTIONS.md
-
-Compressed function/class index:
+**NEW FORMAT** - Include L1/L2 dependencies:
 
 ```markdown
-## src/services/api.ts
-C:ApiClient{get(url),post(url,data),put(url,data),delete(url)}
-F:createClient(config):ApiClient
-F:handleError(err):never
+## src/services/auth.ts
+F:login(email,pass):Token [L1:validateUser,hashCompare] [L2:dbQuery,bcrypt]
+F:validateUser(email):User|null [L1:dbQuery]
+F:hashCompare(plain,hash):bool [L1:bcrypt.compare]
+F:logout(token):void [L1:cache.del]
+C:AuthService{login(),logout(),refresh()} [L1:TokenService,UserRepo]
 
-## src/utils/format.ts
-F:formatDate(date,fmt?):string
-F:formatCurrency(amt,currency?):string
-F:truncate(str,len):string
-
-## src/components/Button.tsx
-C:Button{render(),onClick()}
-T:ButtonProps{label,variant?,disabled?}
+## src/services/user.ts
+F:getUser(id):User [L1:dbQuery,cache.get]
+F:updateUser(id,data):User [L1:dbQuery,validate] [L2:schema.validate]
 ```
 
-Format legend:
-- `C:` = Class with methods
-- `F:` = Function with signature
-- `T:` = Type/Interface with fields
-- `E:` = Enum with values
+**Dependency Detection:**
+- L1: Functions called directly (look for function calls in body)
+- L2: Functions called by L1 functions
 
-### 3. config.json
+### 3. DATASTRUCTURE.md (NEW)
 
-Agent routing configuration:
+Map all data structures, schemas, and relationships:
+
+```markdown
+## Database Tables
+
+T:users
+  PK:id (int,auto)
+  F:email (varchar:255,unique)
+  F:password (varchar:255)
+  F:created_at (timestamp)
+  FK:profile_id -> profiles.id
+  IDX:email
+  REL:1-N orders, 1-1 profile
+
+T:orders
+  PK:id (int,auto)
+  FK:user_id -> users.id
+  FK:product_id -> products.id
+  F:quantity (int)
+  F:status (enum:pending,paid,shipped)
+  REL:N-1 user, N-1 product
+
+## Data Models
+
+M:User [src/models/user.ts]
+  id: string
+  email: string
+  password: string (hashed)
+  REL: profile:Profile, orders:Order[]
+
+M:Order [src/models/order.ts]
+  id: string
+  userId: string
+  items: OrderItem[]
+  REL: user:User, items:OrderItem[]
+
+## API Data Flow
+
+FLOW:POST /api/auth/login
+  IN: {email:string, password:string}
+  VALIDATE: email(format), password(min:8)
+  DB: SELECT users WHERE email=?
+  PROCESS: bcrypt.compare
+  OUT: {token:string, user:User}
+  ERR: 401, 404
+
+FLOW:GET /api/users/:id
+  IN: {id:string}
+  AUTH: required
+  DB: SELECT users WHERE id=?
+  OUT: {user:User}
+  ERR: 404, 403
+```
+
+### 4. config.json
 
 ```json
 {
-  "routing": {
-    "coder": "coder-ts",
-    "coder-py": "coder-py",
-    "coder-php": "coder-php",
-    "designer": "designer",
-    "reviewer": "reviewer",
-    "debugger": "debugger",
-    "tester": "tester"
-  },
+  "routing": {...},
   "lastIndexed": "2025-01-07T10:30:00Z",
   "fileCount": 45,
-  "functionCount": 127
+  "functionCount": 127,
+  "tableCount": 8,
+  "modelCount": 12,
+  "flowCount": 15
 }
 ```
 
 ## Scanning Process
 
-### Step 1: Discover Files
+### Standard Index (`/AgentO:index`)
 
+1. Scan for code files
+2. Extract functions with L1 dependencies
+3. Update ARCHITECTURE.md
+4. Update FUNCTIONS.md
+
+### Data Index (`/AgentO:index --data`)
+
+1. Scan for schema files (migrations, models, prisma, etc.)
+2. Extract database tables and relationships
+3. Scan for API routes
+4. Map data flows
+5. Update DATASTRUCTURE.md
+
+### Quick Index (`/AgentO:index --quick`)
+
+1. Check file modification times
+2. Only re-scan changed files
+3. Update affected sections only
+
+## Dependency Detection
+
+### For Functions
+```typescript
+// Source code
+function login(email, pass) {
+  const user = validateUser(email);  // L1 dep
+  return hashCompare(pass, user.hash);  // L1 dep
+}
+
+// Indexed as:
+F:login(email,pass):Token [L1:validateUser,hashCompare]
 ```
-Scan patterns:
-- **/*.ts, **/*.tsx (TypeScript)
-- **/*.js, **/*.jsx (JavaScript)
-- **/*.py (Python)
-- **/*.php (PHP)
-- **/*.go, **/*.rs, **/*.java (Others)
 
-Ignore patterns:
-- node_modules/
-- dist/, build/
-- .git/
-- *.min.js
-- *.test.*, *.spec.*
+### For Data
+```typescript
+// Prisma schema
+model User {
+  id      Int      @id
+  orders  Order[]  // Relationship
+}
+
+// Indexed as:
+T:users
+  PK:id
+  REL:1-N orders
 ```
-
-### Step 2: Extract Signatures
-
-For each file:
-1. Parse for classes, functions, types
-2. Extract signature (name + params + return)
-3. Compress to single-line format
-
-### Step 3: Update Memory Files
-
-1. **Diff against existing** - Only update changed entries
-2. **Maintain order** - Sort by file path
-3. **Compress** - Remove unnecessary whitespace
-4. **Validate** - Ensure under token limits
-
-## Compression Rules
-
-- No full function bodies (just signatures)
-- No comments or documentation
-- No line breaks in signatures
-- Abbreviate common patterns:
-  - `string` → `str` (in dense mode)
-  - `number` → `num` (in dense mode)
-  - `boolean` → `bool` (in dense mode)
-  - `Promise<T>` → `P<T>` (in dense mode)
 
 ## Output Format
-
-After indexing:
 
 ```markdown
 ## Index Report
 
-**Scanned**: 45 files
-**Functions**: 127 found (12 new, 3 removed)
-**Classes**: 23 found
-**Types**: 34 found
+### Code Index
+- Files: 45 (3 new, 1 removed)
+- Functions: 127 [+12, -3]
+- Classes: 23
+- Dependencies mapped: 89 L1, 156 L2
+
+### Data Index
+- Tables: 8
+- Models: 12
+- API Flows: 15
+- Relationships: 24
 
 ### Updated Files
-- ARCHITECTURE.md (12 lines changed)
-- FUNCTIONS.md (45 entries updated)
-- config.json (stats updated)
-
-### New Entries
-- src/services/newService.ts: 4 functions
-- src/components/NewComponent.tsx: 1 class
-
-### Removed Entries
-- src/old/deprecated.ts (file deleted)
+- ARCHITECTURE.md
+- FUNCTIONS.md
+- DATASTRUCTURE.md
+- config.json
 ```
 
-## Trigger Conditions
+## Auto-Update Triggers
 
-Run indexer when:
-- User runs `/AgentO:index` command
-- New files are created
-- Significant code changes detected
-- Manually triggered by orchestrator
+Update incrementally when:
+- File created/modified → Update that file's section
+- Function added → Add with L1 deps
+- Schema changed → Update DATASTRUCTURE.md
+- Never full re-scan unless `--force`

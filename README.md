@@ -23,14 +23,28 @@ AgentO provides a top-level orchestrator that manages specialized sub-agents:
 | **Tester** | Playwright browser automation and testing |
 | **Indexer** | Background codebase scanning |
 
-### Persistent Memory
+### Persistent Memory (Smart Context Loading)
 
-Never lose project context:
+Full project vision WITHOUT repeated scanning:
 
-- **ARCHITECTURE.md** - Compressed project structure
-- **FUNCTIONS.md** - Index of all functions/classes (prevents duplicates!)
-- **ERRORS.md** - Known errors and solutions
-- **RULES.md** - Project rules all agents follow
+| File | Purpose |
+|------|---------|
+| **ARCHITECTURE.md** | Project structure |
+| **FUNCTIONS.md** | Functions with L1/L2 dependencies |
+| **DATASTRUCTURE.md** | DB schemas, models, API flows |
+| **ERRORS.md** | Known errors and solutions |
+| **RULES.md** | Project rules all agents follow |
+| **ATTEMPTS.md** | Failed actions (never repeat mistakes) |
+
+### Dependency Levels (Token Efficient)
+
+Load only what you need - no more grep/find spam:
+
+```
+L0: F:login(email,pass):Token                    # Signature only
+L1: F:login(...) [L1:validateUser,hashCompare]   # Direct deps
+L2: F:login(...) [L1:...] [L2:dbQuery,bcrypt]    # Deep deps
+```
 
 ### Code Quality Enforcement
 
@@ -164,11 +178,13 @@ You describe the issue
 ├── agents/           # User-defined agents
 ├── templates/        # Scraped design templates
 ├── styles/           # Style guides
-├── config.json       # Agent routing
+├── config.json       # Agent routing + stats
 ├── ARCHITECTURE.md   # Project structure
-├── FUNCTIONS.md      # Code index
+├── FUNCTIONS.md      # Code index with L1/L2 deps
+├── DATASTRUCTURE.md  # DB schemas, models, API flows
 ├── ERRORS.md         # Error solutions
-└── RULES.md          # Project rules
+├── RULES.md          # Project rules
+└── ATTEMPTS.md       # Failed actions log (never retry)
 ```
 
 ## Creating Custom Agents

@@ -1,10 +1,10 @@
 ---
-description: Run the indexer to scan and update memory files. Example: /AgentO:index
+description: Run the indexer to scan and update memory files with dependency levels and data structures. Example: /AgentO:index --data
 ---
 
 # Index Command
 
-Trigger the indexer agent to scan the codebase and update memory files.
+Trigger the indexer agent to scan the codebase and update ALL memory files with smart context data.
 
 ## Usage
 
@@ -15,14 +15,28 @@ Trigger the indexer agent to scan the codebase and update memory files.
 ## Options
 
 ### Default (no args)
-Full index of the project.
+Full index - code + dependencies.
 
 ```
 /AgentO:index
 ```
 
+### --data
+Index data structures (DB schemas, models, API flows).
+
+```
+/AgentO:index --data
+```
+
+### --full
+Complete index - code + data + dependencies.
+
+```
+/AgentO:index --full
+```
+
 ### --quick
-Quick incremental update (only changed files).
+Incremental update (only changed files).
 
 ```
 /AgentO:index --quick
@@ -32,7 +46,7 @@ Quick incremental update (only changed files).
 Index specific directory only.
 
 ```
-/AgentO:index --path src/components
+/AgentO:index --path src/services
 ```
 
 ### --force
@@ -44,72 +58,82 @@ Force re-index everything, ignore cache.
 
 ## What Gets Indexed
 
-1. **ARCHITECTURE.md** - Project structure
-   - Directory tree
-   - File counts
-   - File purposes
+### Code Index (default)
 
-2. **FUNCTIONS.md** - Code index
-   - Classes and methods
-   - Functions and signatures
-   - Types and interfaces
-   - Enums and constants
+1. **ARCHITECTURE.md** - Project structure with file tags
+2. **FUNCTIONS.md** - Functions with L1/L2 dependencies
+   ```
+   F:login(email,pass):Token [L1:validateUser,hash] [L2:dbQuery]
+   ```
 
-3. **config.json** - Metadata
-   - Last indexed timestamp
-   - File and function counts
-   - Index statistics
+### Data Index (--data)
+
+3. **DATASTRUCTURE.md** - Data layer mapping
+   - Database tables with relationships
+   - Data models and their connections
+   - API endpoints with data flow
+   ```
+   T:users [PK:id] [REL:1-N orders]
+   FLOW:POST /api/login [IN:email,pass] [OUT:token]
+   ```
+
+### Always Updated
+
+4. **config.json** - Statistics and timestamps
+
+## Dependency Levels
+
+The indexer maps function dependencies:
+
+| Level | What It Is | Example |
+|-------|------------|---------|
+| L0 | Signature only | `F:login(email,pass):Token` |
+| L1 | Direct calls | `[L1:validateUser,hashCompare]` |
+| L2 | What L1 calls | `[L2:dbQuery,bcrypt]` |
+
+This enables smart context loading - load only what you need.
 
 ## Output
 
 ```
 ## Index Complete
 
-### Statistics
-- Files scanned: 45
-- Functions found: 127
-- Classes found: 23
-- Types found: 34
+### Code Index
+- Files: 45 (3 new)
+- Functions: 127 [+12]
+- L1 Dependencies: 89 mapped
+- L2 Dependencies: 156 mapped
 
-### Changes
-- New: 12 functions, 3 classes
-- Updated: 5 signatures
-- Removed: 2 functions (files deleted)
+### Data Index
+- Tables: 8
+- Models: 12
+- API Flows: 15
+- Relationships: 24
 
 ### Memory Files Updated
-- ARCHITECTURE.md (8 lines changed)
-- FUNCTIONS.md (23 entries modified)
-- config.json (stats updated)
+- ARCHITECTURE.md
+- FUNCTIONS.md (with L1/L2 deps)
+- DATASTRUCTURE.md
+- config.json
 
-### Duration
-- Scan time: 2.3s
-- Parse time: 1.1s
-- Total: 3.4s
+### Token Savings
+- Before: ~50k tokens to grep codebase
+- After: ~2k tokens from memory files
 ```
 
 ## When to Run
 
-- After adding new files
-- After significant refactoring
-- When orchestrator reports outdated memory
-- Before starting a new feature
-- Periodically (daily/weekly)
+| Scenario | Command |
+|----------|---------|
+| First time setup | `/AgentO:index --full` |
+| After adding files | `/AgentO:index --quick` |
+| After schema changes | `/AgentO:index --data` |
+| Outdated memory | `/AgentO:index` |
+| Something seems wrong | `/AgentO:index --force` |
 
-## Implementation
+## Auto-Indexing
 
-1. **Parse options** from `$ARGUMENTS`
-2. **Invoke indexer agent**
-3. **Indexer scans** based on options:
-   - Default: Full scan
-   - `--quick`: Check file modification times, scan only changed
-   - `--path`: Limit scope to directory
-   - `--force`: Ignore cache, rescan all
-4. **Update memory files** with compressed format
-5. **Report results**
-
-## Automatic Indexing
-
-The orchestrator may trigger indexing automatically when:
-- Memory files are missing
-- Memory is significantly outdated
-- User asks about code that's not in memory
+Memory files update automatically via hooks:
+- After Write/Edit → Update FUNCTIONS.md section
+- After schema change → Update DATASTRUCTURE.md
+- Full re-index only when explicitly requested

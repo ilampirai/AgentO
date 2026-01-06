@@ -1,23 +1,52 @@
 {
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write|Edit",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "BEFORE executing this action, check .agenticMemory/ATTEMPTS.md for failed attempts. If this exact action or pattern was tried and marked DONT_RETRY:true, STOP and find an alternative approach. Never repeat blocked actions."
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Before writing code: 1) Check FUNCTIONS.md for duplicates (L0 only). 2) Check DATASTRUCTURE.md if touching data. 3) Only proceed if this code doesn't exist."
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit",
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "A file was just modified. Check if it exceeds 500 lines. If it does, note this violation and suggest splitting the file. File: $ARGUMENTS"
+            "prompt": "File modified. Queue updates: 1) If new function/class, add to FUNCTIONS.md with L1 deps. 2) If file now >500 lines, flag violation. 3) If data model changed, update DATASTRUCTURE.md."
           }
         ]
       }
     ],
-    "PreToolUse": [
+    "PostToolUseFailure": [
       {
-        "matcher": "Write",
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Before writing this file, verify that similar code doesn't already exist in .agenticMemory/FUNCTIONS.md. If duplicate code is being written, stop and suggest reusing the existing code instead."
+            "prompt": "Command FAILED. Log to .agenticMemory/ATTEMPTS.md with timestamp, command, error, and DONT_RETRY:true if it was blocked/permission denied. Learn from this - don't attempt the same pattern again this session."
+          }
+        ]
+      },
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Action failed. Record in ATTEMPTS.md: what was tried, why it failed, whether to retry. If blocked by system, mark DONT_RETRY:true and find alternative approach."
           }
         ]
       }
@@ -28,7 +57,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Session starting. Read .agenticMemory/config.json, .agenticMemory/RULES.md, and .agenticMemory/ARCHITECTURE.md to load project context. If these files don't exist, suggest running /AgentO:start to initialize."
+            "prompt": "Session starting. Load context efficiently: 1) Read config.json for routing. 2) Read RULES.md (required). 3) Scan ATTEMPTS.md for blocked patterns. 4) Read ARCHITECTURE.md (structure only). 5) Do NOT read full FUNCTIONS.md - load on demand by file. 6) Read DATASTRUCTURE.md summary section only."
           }
         ]
       }
@@ -39,7 +68,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Before ending, check if any new functions or classes were created. If so, remind to update .agenticMemory/FUNCTIONS.md with their signatures."
+            "prompt": "Before ending session: 1) Update FUNCTIONS.md with any new code (L0+L1 deps). 2) Update DATASTRUCTURE.md if data models changed. 3) Update ERRORS.md with solved issues. 4) Clear resolved entries from ATTEMPTS.md. 5) Update config.json lastIndexed timestamp."
           }
         ]
       }
