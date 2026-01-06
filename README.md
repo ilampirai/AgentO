@@ -109,8 +109,22 @@ claude --plugin-dir ./AgentO
 
 ## Commands
 
+### Natural Language (Recommended)
+
+Just describe what you want:
+
+```
+/AgentO fix the login button not working
+/AgentO add a rule that all functions need error handling
+/AgentO create a pricing card component like stripe
+```
+
+### Explicit Commands
+
 | Command | Description |
 |---------|-------------|
+| `/AgentO <request>` | Natural language - just describe what you want |
+| `/AgentO:fix <issue>` | Fix an issue using agents (debugger → coder → reviewer) |
 | `/AgentO:start` | Initialize AgentO in a project |
 | `/AgentO:index` | Scan codebase and update memory |
 | `/AgentO:agents list` | Show available agents |
@@ -124,6 +138,24 @@ claude --plugin-dir ./AgentO
 | `/AgentO:design scrape <url>` | Scrape website template |
 | `/AgentO:design crawl <url>` | Crawl entire site |
 | `/AgentO:design style <name>` | Set active style guide |
+
+### Fix Command Flow
+
+When you run `/AgentO:fix`, the agents work together:
+
+```
+You describe the issue
+        ↓
+   Orchestrator (understands & routes)
+        ↓
+   Debugger (diagnoses root cause)
+        ↓
+   Coder (implements fix)
+        ↓
+   Reviewer (validates fix)
+        ↓
+   Documents solution in ERRORS.md
+```
 
 ## Directory Structure
 
