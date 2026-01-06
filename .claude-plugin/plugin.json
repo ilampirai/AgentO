@@ -1,0 +1,22 @@
+{
+  "name": "AgentO",
+  "version": "1.0.0",
+  "description": "Multi-agent orchestrator with persistent memory, intelligent code management, and UI/UX design capabilities. Features hierarchical agents, session persistence, and dynamic agent routing.",
+  "author": {
+    "name": "ilampirai",
+    "url": "https://github.com/ilampirai"
+  },
+  "homepage": "https://github.com/ilampirai/AgentO",
+  "repository": "https://github.com/ilampirai/AgentO",
+  "license": "MIT",
+  "keywords": [
+    "orchestrator",
+    "multi-agent",
+    "memory",
+    "code-quality",
+    "ui-ux",
+    "web-scraping",
+    "playwright",
+    "session-persistence"
+  ]
+}

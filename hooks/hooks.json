@@ -1,0 +1,48 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "A file was just modified. Check if it exceeds 500 lines. If it does, note this violation and suggest splitting the file. File: $ARGUMENTS"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Before writing this file, verify that similar code doesn't already exist in .agenticMemory/FUNCTIONS.md. If duplicate code is being written, stop and suggest reusing the existing code instead."
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Session starting. Read .agenticMemory/config.json, .agenticMemory/RULES.md, and .agenticMemory/ARCHITECTURE.md to load project context. If these files don't exist, suggest running /AgentO:start to initialize."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Before ending, check if any new functions or classes were created. If so, remind to update .agenticMemory/FUNCTIONS.md with their signatures."
+          }
+        ]
+      }
+    ]
+  }
+}

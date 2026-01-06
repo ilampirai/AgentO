@@ -1,0 +1,16 @@
+{
+  "routing": {
+    "coder": "coder-ts",
+    "coder-py": "coder-py",
+    "coder-php": "coder-php",
+    "coder-general": "coder-general",
+    "designer": "designer",
+    "reviewer": "reviewer",
+    "debugger": "debugger",
+    "tester": "tester"
+  },
+  "lastIndexed": null,
+  "fileCount": 0,
+  "functionCount": 0,
+  "version": "1.0.0"
+}
