@@ -6,6 +6,17 @@
       "env": {
         "PLAYWRIGHT_HEADLESS": "true"
       }
+    },
+    "exa": {
+      "command": "npx",
+      "args": ["exa-mcp-server"],
+      "env": {
+        "EXA_API_KEY": "${EXA_API_KEY}"
+      }
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["@upstash/context7-mcp@latest"]
     }
   }
 }
