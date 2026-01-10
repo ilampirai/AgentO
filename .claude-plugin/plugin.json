@@ -1,7 +1,7 @@
 {
   "name": "AgentO",
-  "version": "1.0.0",
-  "description": "Multi-agent orchestrator with persistent memory, intelligent code management, and UI/UX design capabilities. Features hierarchical agents, session persistence, and dynamic agent routing.",
+  "version": "2.0.0",
+  "description": "Multi-agent orchestrator with persistent memory, web search (Exa/Context7), LSP tools, auto-indexing, comment checker, TODO enforcer, iterative loops (Ralph Wiggum), and git mastery. Features auto-routing, background tasks, and version tracking.",
   "author": {
     "name": "ilampirai",
     "url": "https://github.com/ilampirai"
@@ -14,9 +14,19 @@
     "multi-agent",
     "memory",
     "code-quality",
-    "ui-ux",
-    "web-scraping",
+    "auto-index",
+    "web-search",
+    "exa",
+    "context7",
     "playwright",
+    "lsp-tools",
+    "git-master",
+    "ralph-wiggum",
+    "iterative-loop",
+    "todo-enforcer",
+    "comment-checker",
+    "version-tracking",
+    "auto-routing",
     "session-persistence"
   ]
 }
