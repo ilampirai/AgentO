@@ -1,0 +1,14 @@
+{
+  "name": "AgentO",
+  "owner": {
+    "name": "ilampirai",
+    "url": "https://github.com/ilampirai"
+  },
+  "description": "Multi-agent orchestrator marketplace with persistent memory and intelligent code management",
+  "plugins": [
+    {
+      "name": "AgentO",
+      "source": "./"
+    }
+  ]
+}
