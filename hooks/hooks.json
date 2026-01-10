@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "BEFORE executing this action, check .agenticMemory/ATTEMPTS.md for failed attempts. If this exact action or pattern was tried and marked DONT_RETRY:true, STOP and find an alternative approach. Never repeat blocked actions."
+            "prompt": "BEFORE executing: Check .agenticMemory/ATTEMPTS.md for failed attempts. If this exact action or pattern was tried and marked DONT_RETRY:true, STOP and find an alternative approach. Never repeat blocked actions."
           }
         ]
       },
@@ -15,7 +15,11 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Before writing code: 1) Check FUNCTIONS.md for duplicates (L0 only). 2) Check DATASTRUCTURE.md if touching data. 3) Only proceed if this code doesn't exist."
+            "prompt": "DUPLICATION CHECK: Before writing code, search FUNCTIONS.md for similar function names or signatures. If memory is sparse for this area, do a quick focused search of the codebase first. If a function with similar purpose exists, REUSE or extend it."
+          },
+          {
+            "type": "prompt",
+            "prompt": "COMMENT REQUIREMENT: Ensure all new functions have: 1) JSDoc/docstring with @param and @returns for public functions. 2) Inline comments for complex logic. 3) Aim for 10%+ comment ratio in files >50 lines."
           }
         ]
       }
@@ -26,7 +30,20 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "File modified. Queue updates: 1) If new function/class, add to FUNCTIONS.md with L1 deps. 2) If file now >500 lines, flag violation. 3) If data model changed, update DATASTRUCTURE.md."
+            "prompt": "AUTO-INDEX: File modified. Update .agenticMemory/FUNCTIONS.md: 1) Extract new/changed function signatures with params and return types. 2) Parse imports to identify L1 dependencies. 3) If file >500 lines, flag in ARCHITECTURE.md. 4) Update DISCOVERY.md with explored area."
+          },
+          {
+            "type": "prompt",
+            "prompt": "VERSION CHECK: If package.json, requirements.txt, go.mod, Cargo.toml, pyproject.toml, or composer.json was modified, update .agenticMemory/VERSIONS.md with version changes."
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "DISCOVERY: After reading a new file, add its functions/classes to FUNCTIONS.md if not already present. Update DISCOVERY.md to mark this area as explored. Note any TODO/FIXME/HACK comments found."
           }
         ]
       }
@@ -37,7 +54,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Command FAILED. Log to .agenticMemory/ATTEMPTS.md with timestamp, command, error, and DONT_RETRY:true if it was blocked/permission denied. Learn from this - don't attempt the same pattern again this session."
+            "prompt": "Command FAILED. Log to .agenticMemory/ATTEMPTS.md with timestamp, full command, error message. If permission denied or system blocked, mark DONT_RETRY:true. Find alternative approach immediately."
           }
         ]
       },
@@ -46,7 +63,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Action failed. Record in ATTEMPTS.md: what was tried, why it failed, whether to retry. If blocked by system, mark DONT_RETRY:true and find alternative approach."
+            "prompt": "Action failed. Record in ATTEMPTS.md: what was tried, why it failed. If system-blocked, mark DONT_RETRY:true and find alternative approach."
           }
         ]
       }
@@ -57,7 +74,18 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Session starting. Load context efficiently: 1) Read config.json for routing. 2) Read RULES.md (required). 3) Scan ATTEMPTS.md for blocked patterns. 4) Read ARCHITECTURE.md (structure only). 5) Do NOT read full FUNCTIONS.md - load on demand by file. 6) Read DATASTRUCTURE.md summary section only."
+            "prompt": "AGENTO ACTIVE: You are the orchestrator. ALL prompts route through you. MEMORY-FIRST RULE: On EVERY task, BEFORE any work: 1) Read DISCOVERY.md to see what areas are indexed. 2) Detect keywords in user's task. 3) If task area NOT in Discovery, TRIGGER INDEXER with focused search. 4) Only proceed AFTER relevant area is in memory. Build memory from the FIRST prompt - never work blind. Do NOT prompt for full index - build incrementally. After work, update FUNCTIONS.md and DISCOVERY.md."
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "KEYWORD AUTO-INDEX: Scan user message for feature keywords. TRIGGER MAP: login/auth/signin → index auth area | cart/checkout/buy → index cart area | user/profile/account → index user area | api/endpoint/route → index api area | database/model/schema → index db area | test/spec → index test area | ui/component/style → index ui area. If keyword detected AND area not in DISCOVERY.md, MUST trigger indexer BEFORE proceeding. Also check for mode keywords: 'ultrawork' (focus), 'explain' (verbose), 'quick' (terse)."
           }
         ]
       }
@@ -68,7 +96,19 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Before ending session: 1) Update FUNCTIONS.md with any new code (L0+L1 deps). 2) Update DATASTRUCTURE.md if data models changed. 3) Update ERRORS.md with solved issues. 4) Clear resolved entries from ATTEMPTS.md. 5) Update config.json lastIndexed timestamp."
+            "prompt": "SESSION END: 1) If loop active, check completion. 2) Final FUNCTIONS.md update. 3) Update DISCOVERY.md. 4) Add solved issues to ERRORS.md. 5) Clear resolved ATTEMPTS.md. 6) Update config.json. 7) Brief summary only - no long report."
+          }
+        ]
+      }
+    ],
+    "PeriodicUpdate": [
+      {
+        "matcher": ".*",
+        "interval": "5m",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "5-MIN UPDATE: If working on long task, give brief status: ⏱️ Update | 📍 Current task | 🤖 Active agent | 📊 Progress | ❓ Questions for user (need new tool? clarification? user testing?). Keep it SHORT - 3-5 lines max. Only ask questions if genuinely blocked or need user input."
           }
         ]
       }
