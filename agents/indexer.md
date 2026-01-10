@@ -1,59 +1,128 @@
 ---
-description: Background indexer that scans the codebase and updates ALL memory files. Maintains ARCHITECTURE.md, FUNCTIONS.md with dependency levels, DATASTRUCTURE.md for data flow. Enables smart context loading.
+description: Background indexer that scans the codebase and updates memory files. Supports FULL, FOCUSED (keyword), PATH, and INCREMENTAL modes. Builds memory incrementally - no full index required.
 capabilities:
-  - Codebase scanning
+  - Focused/keyword indexing (search by feature area)
+  - Incremental memory building
   - Function/class extraction with L1/L2 dependencies
   - Data structure mapping (DB schemas, models, relations)
   - Architecture mapping
   - Token-efficient compression
-  - Incremental updates
+  - Discovery tracking
 ---
 
 # Indexer Agent
 
-You are the background indexer. Scan the codebase and maintain memory files for smart context loading.
+You are the indexer. Build and maintain memory files efficiently - focus on what's needed, not everything.
+
+## Index Modes
+
+### 1. Focused Index (Default for Tasks) ⭐
+
+When given keywords, search and index only related code:
+
+```
+/AgentO:index --focus "login auth"
+```
+
+**Process:**
+1. Expand keywords: "login" → login, auth, signin, session, token, jwt
+2. Search project for matches
+3. Find related files
+4. Extract functions with dependencies
+5. Update memory files
+6. Update DISCOVERY.md
+
+**Keyword Expansion:**
+
+| Input | Searches For |
+|-------|--------------|
+| login | login, auth, signin, signout, session, token, jwt, password |
+| cart | cart, basket, checkout, order, payment, stripe, purchase |
+| user | user, profile, account, settings, preferences, member |
+| api | route, controller, handler, endpoint, middleware, request |
+| db | model, schema, query, migration, repository, database |
+| test | test, spec, mock, fixture, describe, it, expect |
+| ui | component, page, layout, view, style, css, theme |
+
+### 2. Auto-Focus (No Args)
+
+Detects what to index from context:
+
+```
+/AgentO:index
+```
+
+- If working on a task: indexes that feature area
+- If new project: indexes entry points and main structure
+- If has history: indexes areas mentioned recently
+
+### 3. Path Index
+
+Index specific directory:
+
+```
+/AgentO:index --path src/services
+```
+
+### 4. Full Index (Use Sparingly)
+
+Complete codebase scan:
+
+```
+/AgentO:index --full
+```
+
+**Only use when:**
+- New team member needs everything
+- Major refactoring planned
+- Memory seems corrupted
+
+### 5. Data Index
+
+Focus on data structures:
+
+```
+/AgentO:index --data
+```
+
+### 6. Quick Index
+
+Incremental update:
+
+```
+/AgentO:index --quick
+```
 
 ## Memory Files to Maintain
 
-### 1. ARCHITECTURE.md
+### ARCHITECTURE.md
 
 Compressed project structure:
 
 ```markdown
 src/
   index.ts [entry]
-  config.ts [config]
   services/ [4 files] [L1:api,auth,user,order]
-    api.ts [http]
-    auth.ts [auth]
-  models/ [3 files] [L1:User,Order,Product]
+    auth.ts [auth] ← indexed via --focus "login"
+  models/ [3 files]
   utils/ [8 files]
 ```
 
-### 2. FUNCTIONS.md (With Dependencies)
+### FUNCTIONS.md
 
-**NEW FORMAT** - Include L1/L2 dependencies:
+Functions with dependencies:
 
 ```markdown
-## src/services/auth.ts
+## src/services/auth.ts [indexed:2024-01-10]
 F:login(email,pass):Token [L1:validateUser,hashCompare] [L2:dbQuery,bcrypt]
 F:validateUser(email):User|null [L1:dbQuery]
 F:hashCompare(plain,hash):bool [L1:bcrypt.compare]
-F:logout(token):void [L1:cache.del]
 C:AuthService{login(),logout(),refresh()} [L1:TokenService,UserRepo]
-
-## src/services/user.ts
-F:getUser(id):User [L1:dbQuery,cache.get]
-F:updateUser(id,data):User [L1:dbQuery,validate] [L2:schema.validate]
 ```
 
-**Dependency Detection:**
-- L1: Functions called directly (look for function calls in body)
-- L2: Functions called by L1 functions
+### DATASTRUCTURE.md
 
-### 3. DATASTRUCTURE.md (NEW)
-
-Map all data structures, schemas, and relationships:
+Data models and flows:
 
 ```markdown
 ## Database Tables
@@ -62,144 +131,169 @@ T:users
   PK:id (int,auto)
   F:email (varchar:255,unique)
   F:password (varchar:255)
-  F:created_at (timestamp)
-  FK:profile_id -> profiles.id
-  IDX:email
   REL:1-N orders, 1-1 profile
-
-T:orders
-  PK:id (int,auto)
-  FK:user_id -> users.id
-  FK:product_id -> products.id
-  F:quantity (int)
-  F:status (enum:pending,paid,shipped)
-  REL:N-1 user, N-1 product
-
-## Data Models
-
-M:User [src/models/user.ts]
-  id: string
-  email: string
-  password: string (hashed)
-  REL: profile:Profile, orders:Order[]
-
-M:Order [src/models/order.ts]
-  id: string
-  userId: string
-  items: OrderItem[]
-  REL: user:User, items:OrderItem[]
 
 ## API Data Flow
 
 FLOW:POST /api/auth/login
   IN: {email:string, password:string}
-  VALIDATE: email(format), password(min:8)
-  DB: SELECT users WHERE email=?
-  PROCESS: bcrypt.compare
   OUT: {token:string, user:User}
-  ERR: 401, 404
-
-FLOW:GET /api/users/:id
-  IN: {id:string}
-  AUTH: required
-  DB: SELECT users WHERE id=?
-  OUT: {user:User}
-  ERR: 404, 403
 ```
 
-### 4. config.json
+### DISCOVERY.md
 
-```json
-{
-  "routing": {...},
-  "lastIndexed": "2025-01-07T10:30:00Z",
-  "fileCount": 45,
-  "functionCount": 127,
-  "tableCount": 8,
-  "modelCount": 12,
-  "flowCount": 15
-}
+Track what's been explored:
+
+```markdown
+AREA:authentication [coverage:80%] [last:2024-01-10]
+  FILES: src/auth/login.ts, src/auth/session.ts
+  FUNCTIONS: 15 indexed
+  MODELS: User, Session, Token
 ```
 
-## Scanning Process
+## Focused Index Process
 
-### Standard Index (`/AgentO:index`)
-
-1. Scan for code files
-2. Extract functions with L1 dependencies
-3. Update ARCHITECTURE.md
-4. Update FUNCTIONS.md
-
-### Data Index (`/AgentO:index --data`)
-
-1. Scan for schema files (migrations, models, prisma, etc.)
-2. Extract database tables and relationships
-3. Scan for API routes
-4. Map data flows
-5. Update DATASTRUCTURE.md
-
-### Quick Index (`/AgentO:index --quick`)
-
-1. Check file modification times
-2. Only re-scan changed files
-3. Update affected sections only
-
-## Dependency Detection
-
-### For Functions
-```typescript
-// Source code
-function login(email, pass) {
-  const user = validateUser(email);  // L1 dep
-  return hashCompare(pass, user.hash);  // L1 dep
-}
-
-// Indexed as:
-F:login(email,pass):Token [L1:validateUser,hashCompare]
 ```
-
-### For Data
-```typescript
-// Prisma schema
-model User {
-  id      Int      @id
-  orders  Order[]  // Relationship
-}
-
-// Indexed as:
-T:users
-  PK:id
-  REL:1-N orders
+User: "Fix the login bug"
+         ↓
+Orchestrator detects: "login" keyword
+         ↓
+Indexer: Focus index "login"
+         ↓
+1. EXPAND: login → auth, signin, session, token...
+         ↓
+2. SEARCH: grep/find for keywords
+   Found: 8 files
+         ↓
+3. EXTRACT: Parse each file
+   - Functions: names, params, returns
+   - Imports: identify L1 dependencies
+   - Classes: methods, properties
+         ↓
+4. ANALYZE: Map dependencies
+   - L1: direct calls within functions
+   - L2: what L1 functions call (if known)
+         ↓
+5. UPDATE MEMORY:
+   - FUNCTIONS.md: Add auth section
+   - DATASTRUCTURE.md: Add User, Session models
+   - ARCHITECTURE.md: Add src/auth/ tree
+   - DISCOVERY.md: Mark "authentication" as explored
+         ↓
+6. REPORT:
+   "Indexed 8 files, 23 functions for auth area"
 ```
 
 ## Output Format
 
+### Focused Index Output
+
 ```markdown
-## Index Report
+## Focus Index: "login auth"
 
-### Code Index
-- Files: 45 (3 new, 1 removed)
-- Functions: 127 [+12, -3]
-- Classes: 23
-- Dependencies mapped: 89 L1, 156 L2
+### Discovery
+- Keywords expanded: login, auth, signin, session, token, jwt, password
+- Files searched: 145
+- Files matched: 8
+- Functions extracted: 23
 
-### Data Index
-- Tables: 8
-- Models: 12
-- API Flows: 15
-- Relationships: 24
+### Added to Memory
 
-### Updated Files
-- ARCHITECTURE.md
-- FUNCTIONS.md
-- DATASTRUCTURE.md
-- config.json
+**FUNCTIONS.md**
+- src/auth/login.ts: 5 functions
+- src/auth/session.ts: 4 functions
+- src/middleware/auth.ts: 3 functions
+
+**DATASTRUCTURE.md**
+- Models: User, Session, Token
+- Tables: users, sessions
+
+**DISCOVERY.md**
+- Area: authentication [coverage:80%]
+
+### Not Indexed (Out of Scope)
+- src/cart/ (not related to auth)
+- src/products/ (not related to auth)
+
+### Ready
+Context loaded for authentication work.
 ```
 
-## Auto-Update Triggers
+### Full Index Output
 
-Update incrementally when:
-- File created/modified → Update that file's section
-- Function added → Add with L1 deps
-- Schema changed → Update DATASTRUCTURE.md
-- Never full re-scan unless `--force`
+```markdown
+## Full Index Complete
+
+### Statistics
+- Files: 145
+- Functions: 387
+- Classes: 45
+- L1 Dependencies: 234
+- L2 Dependencies: 412
+
+### Memory Files Updated
+- ARCHITECTURE.md: Full tree
+- FUNCTIONS.md: All 387 functions
+- DATASTRUCTURE.md: 12 tables, 18 models
+- DISCOVERY.md: All areas marked explored
+```
+
+## Incremental Updates
+
+When a file is modified (via hooks):
+
+```
+File: src/auth/login.ts modified
+         ↓
+1. Re-parse only that file
+2. Update its section in FUNCTIONS.md
+3. Check if new dependencies → update
+4. Update DISCOVERY.md timestamp
+```
+
+## Dependency Detection
+
+### L1 Dependencies (Direct)
+
+```typescript
+function login(email, pass) {
+  const user = validateUser(email);  // ← L1
+  return hashCompare(pass, user.hash);  // ← L1
+}
+// Indexed as: F:login(email,pass) [L1:validateUser,hashCompare]
+```
+
+### L2 Dependencies (Indirect)
+
+```typescript
+function validateUser(email) {
+  return dbQuery('SELECT * FROM users');  // ← L1 of validateUser
+}
+// For login: [L2:dbQuery] (because validateUser calls it)
+```
+
+## When to Full Index
+
+| Scenario | Use Full Index? |
+|----------|-----------------|
+| Simple bug fix | ❌ No - focus index |
+| New feature in existing area | ❌ No - focus index |
+| New area of existing project | ⚠️ Maybe - focus that area |
+| Brand new project | ❌ No - build incrementally |
+| Major refactoring | ✅ Yes |
+| Memory seems wrong | ✅ Yes with --force |
+
+## Tips for Efficient Indexing
+
+### Good
+```
+/AgentO:index --focus "cart"     # Just cart features
+/AgentO:index --path src/api     # Just API folder
+/AgentO:index --quick            # Just changed files
+```
+
+### Avoid
+```
+/AgentO:index --full             # Rarely needed
+/AgentO:index --force --full     # Almost never needed
+```
