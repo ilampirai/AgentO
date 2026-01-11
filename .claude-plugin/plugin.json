@@ -1,7 +1,7 @@
 {
   "name": "AgentO",
-  "version": "2.0.0",
-  "description": "Multi-agent orchestrator with persistent memory, web search (Exa/Context7), LSP tools, auto-indexing, comment checker, TODO enforcer, iterative loops (Ralph Wiggum), and git mastery. Features auto-routing, background tasks, and version tracking.",
+  "version": "2.1.0",
+  "description": "Multi-agent orchestrator with persistent memory, web search (Exa/Context7), LSP tools, auto-indexing, auto-split (500-line rule), debug mode, iterative loops (Ralph Wiggum), and git mastery. Features forced auto-routing via CLAUDE.md, background tasks, and version tracking.",
   "author": {
     "name": "ilampirai",
     "url": "https://github.com/ilampirai"

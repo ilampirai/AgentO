@@ -63,7 +63,7 @@ Action: [what to do instead]
 - 5-min updates on long tasks
 
 ---
-*AgentO v2.0.0 - Auto-routing enabled*
+*AgentO v2.1.0 - Auto-routing enabled*
 `;
 
 const FILES = {

@@ -87,5 +87,5 @@ All memory files in `.agenticMemory/`:
 - `ERRORS.md` - Known solutions
 
 ---
-*AgentO v2.0.0 - Auto-routing enabled*
+*AgentO v2.1.0 - Auto-routing enabled*
 
