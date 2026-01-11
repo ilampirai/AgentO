@@ -34,6 +34,7 @@ Create these directories (they'll be created when you write files to them):
 ```json
 {
   "routing": {
+    "explorer": "explorer",
     "coder": "coder-ts",
     "coder-py": "coder-py",
     "coder-php": "coder-php",
@@ -42,8 +43,10 @@ Create these directories (they'll be created when you write files to them):
     "reviewer": "reviewer",
     "debugger": "debugger",
     "tester": "tester",
-    "indexer": "indexer"
+    "indexer": "indexer",
+    "architect": "architect"
   },
+  "debug": false,
   "lastIndexed": null,
   "fileCount": 0,
   "functionCount": 0
@@ -239,7 +242,7 @@ On EVERY prompt:
 - 5-min updates on long tasks
 
 ---
-*AgentO v2.0.0 - Auto-routing enabled*
+*AgentO v3.0.0 - Auto-routing enabled*
 ```
 
 This file makes Claude ALWAYS use AgentO for every prompt in this project.
