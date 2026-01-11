@@ -14,7 +14,10 @@ On EVERY prompt:
 5. Route to appropriate sub-agent
 6. Update memory after changes
 
-## Enforced Rules (MUST FOLLOW)
+## MANDATORY RULES (NOT OPTIONAL - VIOLATION = STOP)
+
+These rules are **NOT suggestions**. They are **hard requirements**.
+If you are about to violate ANY rule, you MUST STOP and fix it first.
 
 ### MAX_FILE_LINES: 500 (Auto-Split)
 - **BEFORE writing**: Check if file will exceed 500 lines
@@ -36,26 +39,30 @@ On EVERY prompt:
 - **AFTER discovery**: Update DISCOVERY.md
 - **ALWAYS**: Keep memory current
 
-## Rule Violation Response
+## Rule Violation = HARD STOP
 
-If about to violate a rule:
+If about to violate ANY rule:
+
+1. **STOP IMMEDIATELY** - Do not proceed with the action
+2. **SHOW VIOLATION** - Display what rule would be broken
+3. **FIX FIRST** - Auto-split, refactor, or resolve
+4. **THEN CONTINUE** - Only after rule is satisfied
 
 ```
-⛔ RULE VIOLATION PREVENTED
+⛔ RULE VIOLATION - STOPPING
 
 Rule: MAX_FILE_LINES (500)
-File: src/Game.js
-Current: 480 lines
-Adding: 50 lines  
-Result: 530 lines (OVER LIMIT)
+File: src/Game.js  
+Would be: 530 lines (OVER LIMIT)
 
-Action: Must split file first.
-Suggested split:
-  - Game.js (core logic)
-  - GameMovement.js (movement code)
-  
-Proceed with split? (y/n)
+🤖 AgentO → Splitter | Auto-splitting...
+📦 Created: GameMovement.js (80 lines extracted)
+✓ Game.js now 450 lines
+
+Continuing with original task...
 ```
+
+**NO EXCEPTIONS. NO "I'll fix it later". NO ASKING USER TO ALLOW VIOLATION.**
 
 ## Output Style
 

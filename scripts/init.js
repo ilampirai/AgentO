@@ -29,7 +29,7 @@ On EVERY prompt:
 5. Route to appropriate sub-agent
 6. Update memory after changes
 
-## Enforced Rules (MUST FOLLOW)
+## MANDATORY RULES (NOT OPTIONAL - VIOLATION = STOP)
 
 ### MAX_FILE_LINES: 500 (Auto-Split)
 - **BEFORE writing**: Check if file will exceed 500 lines
@@ -49,14 +49,14 @@ On EVERY prompt:
 - Update FUNCTIONS.md after changes
 - Update DISCOVERY.md after exploring
 
-## Rule Violation Response
+## Rule Violation = HARD STOP
 
-If about to violate a rule, STOP and show:
-\`\`\`
-⛔ RULE VIOLATION PREVENTED
-Rule: [which rule]
-Action: [what to do instead]
-\`\`\`
+If about to violate ANY rule:
+1. STOP IMMEDIATELY
+2. Auto-fix (split file, refactor, etc.)
+3. Then continue
+
+**NO EXCEPTIONS. NO ASKING TO ALLOW VIOLATION.**
 
 ## Output Style
 - **ALWAYS show agent**: \`🤖 AgentO → [Agent] | [Task]\`
