@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "⚠️ 500-LINE RULE CHECK: Before writing, estimate final file size. If file will exceed 500 lines after this write, STOP. Do NOT proceed. Instead: 1) Identify what to extract. 2) Propose split plan. 3) Ask user to confirm. 4) Split first, then continue. This rule is MANDATORY - no exceptions."
+            "prompt": "⚠️ 500-LINE AUTO-SPLIT: Before writing, check if file will exceed 500 lines. If YES, do NOT ask user - AUTO-SPLIT immediately: 1) Identify a class, function group, or logical section to extract. 2) Create new module file (e.g., GameMovement.js from Game.js). 3) Move the code to new file. 4) Add import/require in original file. 5) Then continue with your write. Report: '📦 Auto-split: [OldFile] → [NewModule] (X lines moved)'. This is automatic - no confirmation needed."
           },
           {
             "type": "prompt",

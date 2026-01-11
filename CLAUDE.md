@@ -16,10 +16,15 @@ On EVERY prompt:
 
 ## Enforced Rules (MUST FOLLOW)
 
-### MAX_FILE_LINES: 500
+### MAX_FILE_LINES: 500 (Auto-Split)
 - **BEFORE writing**: Check if file will exceed 500 lines
-- **IF exceeded**: STOP and split the file first
-- **NO EXCEPTIONS**: Do not create files over 500 lines
+- **IF exceeded**: AUTO-SPLIT immediately (no asking):
+  1. Find a class/function group to extract
+  2. Create new module file
+  3. Move code + add exports
+  4. Add import in original file
+  5. Report: `📦 Auto-split: X.js → Y.js (N lines moved)`
+- **NO EXCEPTIONS**: Never create files over 500 lines
 
 ### NO_DUPLICATE_CODE
 - **BEFORE writing**: Check FUNCTIONS.md for similar functions
