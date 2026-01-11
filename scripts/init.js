@@ -64,12 +64,13 @@ If about to violate ANY rule:
 - 5-min updates on long tasks
 
 ---
-*AgentO v2.1.0 - Auto-routing enabled*
+*AgentO v3.0.0 - Auto-routing enabled*
 `;
 
 const FILES = {
   'config.json': JSON.stringify({
     routing: {
+      explorer: "explorer",
       coder: "coder-ts",
       "coder-py": "coder-py",
       "coder-php": "coder-php",
@@ -78,8 +79,10 @@ const FILES = {
       reviewer: "reviewer",
       debugger: "debugger",
       tester: "tester",
-      indexer: "indexer"
+      indexer: "indexer",
+      architect: "architect"
     },
+    debug: false,
     lastIndexed: null,
     fileCount: 0,
     functionCount: 0
