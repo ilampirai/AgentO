@@ -1,207 +1,184 @@
+---
+name: lsp-tools
+description: Language Server Protocol tools for code intelligence including go-to-definition, find references, rename symbol, and diagnostics.
+---
+
 # LSP Tools Skill
 
-Leverage Language Server Protocol for intelligent code operations.
+Language Server Protocol integration for advanced code intelligence.
 
 ## Available Operations
 
-| Operation | Purpose | When to Use |
-|-----------|---------|-------------|
-| **Hover** | Get type info & docs | Understanding code |
-| **Definition** | Jump to declaration | Exploring implementations |
-| **References** | Find all usages | Before refactoring |
-| **Rename** | Safe symbol rename | Refactoring |
-| **Code Actions** | Quick fixes & refactors | Improving code |
-| **Diagnostics** | Errors & warnings | Debugging |
-
-## Hover - Type Information
-
-Get detailed type information and documentation for any symbol.
-
-### Use Cases
+### Go to Definition
+Find where a symbol is defined.
 ```
-✅ "What type is this variable?"
-✅ "What parameters does this function take?"
-✅ "Show me the interface definition"
-✅ "What does this import provide?"
+Input: file path + position (line, character)
+Output: Definition location(s)
 ```
 
-### What You Get
-- Full type signature
-- JSDoc/docstring comments
-- Parameter descriptions
-- Return type information
-- Generic constraints
-
-## Go to Definition
-
-Navigate to where a symbol is declared.
-
-### Use Cases
+### Find References
+Find all usages of a symbol.
 ```
-✅ "Where is this function defined?"
-✅ "Show me the source of this class"
-✅ "Find the original type declaration"
+Input: file path + position
+Output: List of reference locations
 ```
 
-### Jump Targets
-- Function implementations
-- Class definitions
-- Type/interface declarations
-- Variable declarations
-- Import sources
-
-## Find References
-
-Locate all usages of a symbol across the codebase.
-
-### Use Cases
+### Rename Symbol
+Rename a symbol across the codebase.
 ```
-✅ "Where is this function called?"
-✅ "What uses this interface?"
-✅ "Find all imports of this module"
-✅ "Check before deleting this code"
+Input: file path + position + new name
+Output: List of edits to apply
 ```
 
-### CRITICAL: Always Use Before
-- Renaming symbols
-- Deleting functions/classes
-- Changing function signatures
-- Removing exports
-
-## Rename Symbol
-
-Safely rename identifiers across all files.
-
-### Use Cases
+### Get Diagnostics
+Get errors, warnings, and hints for a file.
 ```
-✅ "Rename this function to better name"
-✅ "Rename this class throughout the project"
-✅ "Fix this typo in variable name everywhere"
+Input: file path
+Output: List of diagnostics with severity and message
 ```
 
-### Process
-1. **First**: Find references to understand scope
-2. **Verify**: Check all affected files
-3. **Execute**: Apply rename
-4. **Validate**: Run tests/lints
-
-### What Gets Renamed
-- The symbol itself
-- All references to it
-- Import statements
-- Export statements
-- Documentation references (in some cases)
-
-## Code Actions
-
-Automated refactoring and quick fixes.
-
-### Common Actions
-
-| Action | Trigger |
-|--------|---------|
-| **Extract function** | Selected code block |
-| **Extract variable** | Complex expression |
-| **Auto-import** | Unknown identifier |
-| **Add missing imports** | Unresolved symbols |
-| **Remove unused** | Unused imports/vars |
-| **Convert to async** | Promise chains |
-| **Add type annotation** | Implicit any |
-
-### Refactoring Actions
+### Hover Information
+Get type information and documentation.
 ```
-Extract to function    → Selected code → New function
-Extract to variable    → Expression → Named const
-Inline variable        → Variable → Replace with value
-Move to new file       → Class/function → Separate file
-Convert to arrow       → Function → Arrow function
+Input: file path + position
+Output: Type info, documentation
 ```
 
-## Diagnostics
-
-Real-time error and warning detection.
-
-### Severity Levels
-| Level | Meaning |
-|-------|---------|
-| **Error** | Won't compile/run |
-| **Warning** | Potential issue |
-| **Info** | Suggestions |
-| **Hint** | Style/convention |
-
-### Common Diagnostics
+### Code Actions
+Get suggested fixes and refactorings.
 ```
-Error:   Type 'X' is not assignable to type 'Y'
-Error:   Cannot find name 'X'
-Warning: 'X' is declared but never used
-Warning: Unexpected any
-Info:    Prefer const over let
+Input: file path + range
+Output: List of available actions
 ```
 
-## Workflow Integration
+## Use Cases
 
-### Before Writing New Code
-1. Hover over similar functions to understand patterns
-2. Go to definition of types you'll extend
-3. Check diagnostics in related files
+### Safe Refactoring
 
-### During Refactoring
-1. Find all references first
-2. Understand the full scope of change
-3. Use rename for safe symbol changes
-4. Check diagnostics after changes
-
-### When Debugging
-1. Hover to verify types are what you expect
-2. Go to definition to check implementation
-3. Find references to trace data flow
-4. Check diagnostics for hidden issues
-
-## Language Support
-
-| Language | Full Support | Partial |
-|----------|--------------|---------|
-| TypeScript | ✅ All operations | |
-| JavaScript | ✅ All operations | |
-| Python | ✅ With Pylance/Pyright | |
-| Go | ✅ With gopls | |
-| Rust | ✅ With rust-analyzer | |
-| Java | ✅ With Eclipse JDT | |
-| C/C++ | | ⚠️ Varies by LSP |
-
-## Best Practices
-
-### Prefer LSP Over Grep
 ```
-❌ grep -r "functionName" .
-✅ LSP Find References
-
-Why: LSP understands scope, grep finds text
+1. Use "Find References" to see all usages
+2. Review each usage context for safety
+3. Use "Rename Symbol" for safe rename across codebase
+4. Verify diagnostics show no new errors
+5. Run tests to confirm nothing broke
 ```
 
-### Verify Before Refactoring
-```
-❌ Find-and-replace symbol name
-✅ LSP Rename with preview
+### Understanding Code
 
-Why: LSP handles scope, imports, exports correctly
 ```
-
-### Trust Hover Types
-```
-❌ Guessing what type a variable is
-✅ Hover to see exact type
-
-Why: Avoid runtime type errors
+1. Use "Go to Definition" to find source
+2. Use "Hover" to see type information
+3. Use "Find References" to see usage patterns
+4. Build mental model of dependencies
 ```
 
-## Integration with AgentO
+### Finding Issues
 
-When editing code:
+```
+1. Get diagnostics for a file
+2. Filter by severity (errors first)
+3. Use code actions for quick fixes
+4. Address warnings before they become errors
+```
 
-1. **Before changes**: Use hover to understand existing code
-2. **Before refactoring**: Find references to assess impact
-3. **During rename**: Use LSP rename, not find-replace
-4. **After changes**: Check diagnostics for errors
-5. **Update memory**: Log renamed symbols in FUNCTIONS.md
+## Integration with Memory
 
+### After Find References
+
+```
+If function has many references (>10):
+- Note in FUNCTIONS.md as "widely used"
+- Be extra careful when modifying
+- Consider impact analysis before changes
+```
+
+### After Rename
+
+```
+- Update FUNCTIONS.md with new name
+- Update any references in ARCHITECTURE.md
+- Check ERRORS.md for references to old name
+```
+
+### After Diagnostics
+
+```
+If recurring error pattern:
+- Add solution to ERRORS.md
+- Consider adding prevention rule to RULES.md
+```
+
+## Supported Languages
+
+| Language | LSP Server | Features |
+|----------|------------|----------|
+| TypeScript/JavaScript | typescript-language-server | Full support |
+| Python | pyright, pylsp | Full support |
+| Go | gopls | Full support |
+| Rust | rust-analyzer | Full support |
+| PHP | intelephense | Full support |
+| Java | jdtls | Full support |
+| C/C++ | clangd | Full support |
+
+## Common LSP Workflows
+
+### Rename a Function Safely
+
+```
+1. Position cursor on function name
+2. LSP: Find References
+   → See all 15 usages across 8 files
+3. Review usages - any dynamic calls? reflection?
+4. LSP: Rename Symbol → "newFunctionName"
+   → All 15 usages updated automatically
+5. LSP: Get Diagnostics on affected files
+   → Verify no new errors
+6. Update FUNCTIONS.md with new name
+```
+
+### Trace a Bug
+
+```
+1. Start at error location
+2. LSP: Go to Definition on suspicious function
+3. LSP: Hover to check types
+4. LSP: Find References to see all callers
+5. Identify where bad data enters
+6. Fix and document in ERRORS.md
+```
+
+### Refactor to Extract Function
+
+```
+1. Select code block to extract
+2. LSP: Code Actions → "Extract to function"
+3. Name the new function appropriately
+4. LSP: Find References to verify extraction
+5. Add new function to FUNCTIONS.md
+```
+
+## Error Handling
+
+### LSP Server Not Running
+
+```
+If LSP operations fail:
+- Check if language server is installed
+- Restart the language server
+- Fall back to grep-based searching
+```
+
+### LSP Results Incomplete
+
+```
+If results seem wrong:
+- Rebuild project (npm run build, etc.)
+- Invalidate caches
+- Check tsconfig/pyproject.toml settings
+```
+
+## Tips
+
+- Trust but verify LSP results
+- Combine with tests for safety
+- Update memory after large refactors

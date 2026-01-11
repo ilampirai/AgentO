@@ -1,153 +1,164 @@
+---
+name: code-splitting
+description: Automatically splits files that exceed 500 lines into smaller, focused modules. Maintains imports and exports correctly.
+---
+
 # Code Splitting Skill
 
-Automatically split files when they exceed 500 lines.
+This skill handles automatic file splitting when the 500-line limit is approached.
 
 ## When to Split
 
-**Trigger**: File will exceed 500 lines after a write operation.
+- File exceeds 400 lines (proactive)
+- File would exceed 500 lines after changes (mandatory)
+- File has multiple unrelated responsibilities
+- File has large classes that can be separated
 
-**Action**: Automatic - no user confirmation needed.
+## Splitting Strategies
 
-## Split Process
+### By Responsibility
 
 ```
-File approaching 500 lines
-         ↓
-1. ANALYZE: Find extractable code
-   - Classes (entire class)
-   - Function groups (related functions)
-   - Constants/configs
-   - Utility functions
-         ↓
-2. CREATE: New module file
-   - Name: [Purpose]Manager.js, [Feature]Utils.js, etc.
-   - Move extracted code
-   - Add exports
-         ↓
-3. UPDATE: Original file
-   - Remove extracted code
-   - Add import statement
-   - Keep references working
-         ↓
-4. REPORT: What was done
-   📦 Auto-split: Game.js → GameMovement.js (120 lines moved)
+// Before: userService.ts (600 lines)
+- User CRUD operations
+- User authentication
+- User preferences
+- User notifications
+
+// After:
+- userCrud.ts (150 lines)
+- userAuth.ts (200 lines)  
+- userPreferences.ts (100 lines)
+- userNotifications.ts (150 lines)
+- userService.ts (50 lines) - re-exports all
 ```
 
-## What to Extract (Priority Order)
+### By Feature
 
-### 1. Entire Classes
-```javascript
-// BEFORE: Game.js (600 lines)
-class Game { ... }
-class PowerUpManager { ... }  // ← Extract this
+```
+// Before: api.ts (700 lines)
+- /users endpoints
+- /products endpoints
+- /orders endpoints
 
-// AFTER: Game.js (450 lines) + PowerUpManager.js (150 lines)
-import { PowerUpManager } from './PowerUpManager.js';
-class Game { ... }
+// After:
+- api/users.ts
+- api/products.ts
+- api/orders.ts
+- api/index.ts - combines routes
 ```
 
-### 2. Function Groups
-```javascript
-// BEFORE: utils.js (550 lines)
-function validateEmail() { ... }
-function validatePhone() { ... }
-function validateAddress() { ... }
-function formatDate() { ... }
-function formatCurrency() { ... }
+### By Layer
 
-// AFTER: utils.js (300 lines) + validators.js (150 lines) + formatters.js (100 lines)
+```
+// Before: product.ts (500 lines)
+- Product interface
+- Product validation
+- Product repository
+- Product service
+
+// After:
+- product/types.ts
+- product/validation.ts
+- product/repository.ts
+- product/service.ts
+- product/index.ts
 ```
 
-### 3. Constants & Config
-```javascript
-// BEFORE: Game.js (520 lines)
-const POWER_UPS = { ... };  // 50 lines
-const BOARD_CONFIG = { ... };  // 30 lines
+## Splitting Process
 
-// AFTER: Game.js (440 lines) + gameConfig.js (80 lines)
-import { POWER_UPS, BOARD_CONFIG } from './gameConfig.js';
+### 1. Analyze File
+
+```
+- Count lines
+- Identify logical sections
+- Map internal dependencies
+- List exports
+```
+
+### 2. Plan Split
+
+```
+- Group related functions/classes
+- Determine new file names
+- Plan import/export structure
+- Identify shared utilities
+```
+
+### 3. Execute Split
+
+```
+- Create new files with extracted code
+- Update imports in new files
+- Create barrel file (index.ts) if needed
+- Update original file to re-export
+```
+
+### 4. Update References
+
+```
+- Find all files importing from original
+- Update import paths if needed
+- Verify no broken imports
+```
+
+## Import Patterns After Split
+
+### Barrel Export (Recommended)
+
+```typescript
+// product/index.ts
+export * from './types';
+export * from './validation';
+export * from './repository';
+export * from './service';
+
+// Usage remains same:
+import { Product, validateProduct, ProductService } from './product';
+```
+
+### Direct Imports (For Tree Shaking)
+
+```typescript
+// When bundle size matters:
+import { Product } from './product/types';
+import { validateProduct } from './product/validation';
 ```
 
 ## Naming Conventions
 
-| Extracted Content | New File Name |
-|-------------------|---------------|
-| `class XManager` | `XManager.js` |
-| `class XController` | `XController.js` |
-| Validation functions | `validators.js` |
-| Format functions | `formatters.js` |
-| API calls | `api.js` or `XApi.js` |
-| Constants | `constants.js` or `XConfig.js` |
-| Utilities | `utils.js` or `XUtils.js` |
-| Types/Interfaces | `types.js` or `X.types.ts` |
-
-## Import Patterns
-
-### JavaScript (ES Modules)
-```javascript
-// Named exports
-export { PowerUpManager };
-import { PowerUpManager } from './PowerUpManager.js';
-
-// Default export
-export default PowerUpManager;
-import PowerUpManager from './PowerUpManager.js';
-```
-
-### JavaScript (CommonJS)
-```javascript
-module.exports = { PowerUpManager };
-const { PowerUpManager } = require('./PowerUpManager');
-```
-
-### TypeScript
-```typescript
-export class PowerUpManager { ... }
-import { PowerUpManager } from './PowerUpManager';
-```
-
-### Python
-```python
-# powerup_manager.py
-class PowerUpManager: ...
-
-# game.py
-from powerup_manager import PowerUpManager
-```
+| Original | Split Files |
+|----------|-------------|
+| userService.ts | user/service.ts, user/types.ts, user/index.ts |
+| apiRoutes.ts | api/users.ts, api/products.ts, api/index.ts |
+| utils.ts | utils/string.ts, utils/date.ts, utils/index.ts |
 
 ## Output Format
 
-When auto-split happens:
+After splitting, report:
 
 ```
-📦 Auto-split: Game.js → GameMovement.js
+📦 Auto-split: userService.ts (612 lines)
 
-Moved (120 lines):
-  - class MovementController
-  - function calculatePath()
-  - function animateMovement()
+Created:
+- user/types.ts (45 lines)
+- user/validation.ts (78 lines)
+- user/repository.ts (156 lines)
+- user/service.ts (234 lines)
+- user/index.ts (12 lines)
 
-Added import:
-  import { MovementController, calculatePath, animateMovement } from './GameMovement.js';
+Updated imports in:
+- src/api/users.ts
+- src/controllers/userController.ts
+- tests/user.test.ts
 
-Game.js: 656 → 536 lines
-GameMovement.js: 120 lines (new)
-
-Continuing with original task...
+Total: 1 file → 5 files, all under 250 lines
 ```
 
-## Rules
+## Update Memory
 
-1. **Always preserve functionality** - code must work after split
-2. **Maintain imports** - all references must be updated
-3. **Keep related code together** - don't split a class across files
-4. **Name clearly** - new file name should indicate contents
-5. **Update memory** - add new file to FUNCTIONS.md and ARCHITECTURE.md
-
-## Integration
-
-After split:
-1. Add new file to `.agenticMemory/ARCHITECTURE.md`
-2. Add new functions to `.agenticMemory/FUNCTIONS.md`
-3. Update DISCOVERY.md if new area
-
+After splitting:
+1. Remove old FUNCTIONS.md entry
+2. Add new entries for each split file
+3. Update ARCHITECTURE.md if structure changed
+4. Note split in session summary

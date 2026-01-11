@@ -1,134 +1,180 @@
 ---
 name: web-scraping
-description: Web scraping and template extraction using Playwright. Captures HTML structure, CSS patterns, and design tokens from websites. Use when building UI based on existing sites or extracting templates.
+description: Web scraping capabilities using Playwright MCP for extracting design patterns, templates, and content from websites.
 ---
 
 # Web Scraping Skill
 
-This skill enables scraping websites to extract templates and design patterns.
-
-## When to Invoke
-
-Use this skill when:
-- User provides a URL to replicate
-- Building UI "like" another site
-- Extracting design tokens
-- Creating template library
+Extract design patterns, templates, and content from websites using Playwright MCP.
 
 ## Capabilities
 
-### 1. Single Page Scraping
+- Screenshot capture
+- DOM inspection
+- CSS extraction
+- Content scraping
+- Form interaction
 
-Extract from one URL:
-- HTML structure (semantic skeleton)
-- CSS patterns (colors, typography, spacing)
-- Component identification
-- Design tokens
+## Use Cases
 
-### 2. Full Site Crawling
+### Design Inspiration
 
-Crawl entire sites to:
-- Identify unique layouts
-- Extract component libraries
-- Build comprehensive templates
-- Map site structure
-
-### 3. Design Token Extraction
-
-Capture design system:
-- Color palette
-- Typography scale
-- Spacing system
-- Border radii
-- Shadow styles
-
-## Process
-
-### Step 1: Load Page
-
-Using Playwright MCP:
-```
-1. Navigate to URL
-2. Wait for full load
-3. Capture rendered state
+```javascript
+// Capture design from reference site
+await page.goto('https://example.com');
+await page.screenshot({ path: 'reference.png', fullPage: true });
 ```
 
-### Step 2: Extract Structure
+### Extract Color Palette
 
-```
-1. Parse DOM structure
-2. Identify semantic elements
-3. Extract component boundaries
-4. Remove unnecessary attributes
-```
-
-### Step 3: Extract Styles
-
-```
-1. Capture computed styles
-2. Identify CSS variables
-3. Extract color values
-4. Calculate spacing patterns
-```
-
-### Step 4: Save Template
-
-Store in `.agenticMemory/templates/[name]/`:
-- structure.html
-- styles.css
-- variables.css
-- components/
-- meta.json
-
-## Template Format
-
-### structure.html
-Clean HTML skeleton without content:
-```html
-<section class="hero">
-  <div class="hero__content">
-    <h1 class="hero__title"><!-- title --></h1>
-    <p class="hero__subtitle"><!-- subtitle --></p>
-    <div class="hero__actions">
-      <button class="btn btn--primary"><!-- cta --></button>
-    </div>
-  </div>
-</section>
+```javascript
+const colors = await page.evaluate(() => {
+  const elements = document.querySelectorAll('*');
+  const colorSet = new Set();
+  
+  elements.forEach(el => {
+    const style = getComputedStyle(el);
+    if (style.color !== 'rgba(0, 0, 0, 0)') colorSet.add(style.color);
+    if (style.backgroundColor !== 'rgba(0, 0, 0, 0)') colorSet.add(style.backgroundColor);
+  });
+  
+  return [...colorSet];
+});
 ```
 
-### variables.css
-Extracted design tokens:
+### Extract Typography
+
+```javascript
+const typography = await page.evaluate(() => {
+  const textElements = document.querySelectorAll('h1, h2, h3, h4, h5, h6, p, a, span');
+  const fonts = new Map();
+  
+  textElements.forEach(el => {
+    const style = getComputedStyle(el);
+    const key = `${style.fontFamily}|${style.fontSize}|${style.fontWeight}`;
+    fonts.set(key, {
+      fontFamily: style.fontFamily,
+      fontSize: style.fontSize,
+      fontWeight: style.fontWeight,
+      lineHeight: style.lineHeight
+    });
+  });
+  
+  return [...fonts.values()];
+});
+```
+
+### Extract Component HTML
+
+```javascript
+const component = await page.evaluate(() => {
+  const card = document.querySelector('.card');
+  return card ? card.outerHTML : null;
+});
+```
+
+## Storage Structure
+
+Save scraped content to `.agenticMemory/templates/`:
+
+```
+.agenticMemory/templates/
+├── stripe/
+│   ├── screenshots/
+│   │   ├── homepage.png
+│   │   └── pricing.png
+│   ├── colors.css
+│   ├── typography.css
+│   └── components/
+│       ├── button.html
+│       ├── card.html
+│       └── nav.html
+├── tailwind-ui/
+│   ├── screenshots/
+│   ├── colors.css
+│   └── components/
+└── linear/
+    ├── screenshots/
+    ├── colors.css
+    └── components/
+```
+
+## Output Formats
+
+### colors.css
+
 ```css
+/* Extracted from: https://stripe.com */
+/* Date: 2024-01-12 */
+
 :root {
+  /* Primary */
   --color-primary: #635bff;
-  --color-secondary: #0a2540;
-  --font-family: 'Inter', sans-serif;
-  --spacing-unit: 4px;
-  --radius-medium: 8px;
+  --color-primary-dark: #4b45c6;
+  
+  /* Text */
+  --color-text: #425466;
+  --color-text-dark: #0a2540;
+  
+  /* Background */
+  --color-bg: #ffffff;
+  --color-bg-alt: #f6f9fc;
+  
+  /* Accent */
+  --color-success: #00d4aa;
+  --color-warning: #ffbb00;
+  --color-error: #ff5567;
 }
 ```
 
-### meta.json
-Template metadata:
-```json
-{
-  "source": "https://example.com",
-  "scrapedAt": "2025-01-07T10:30:00Z",
-  "components": ["hero", "features", "pricing"],
-  "colors": ["#635bff", "#0a2540"],
-  "fonts": ["Inter"]
+### typography.css
+
+```css
+/* Extracted from: https://stripe.com */
+/* Date: 2024-01-12 */
+
+:root {
+  --font-family-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-mono: 'SF Mono', 'Fira Code', monospace;
+}
+
+.text-h1 {
+  font-size: 3.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.text-h2 {
+  font-size: 2.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.text-body {
+  font-size: 1.125rem;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.text-small {
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
 }
 ```
 
-## Usage
+## Ethical Guidelines
 
-After scraping, templates can be:
-1. Applied to new components
-2. Used as style reference
-3. Customized for project needs
+- Respect robots.txt
+- Don't scrape personal data
+- Use for inspiration, not copying
+- Add attribution comments
+- Don't overload servers (add delays)
 
-## Requirements
+## After Scraping
 
-- Playwright MCP server must be running
-- Network access to target URLs
-- Write access to .agenticMemory/templates/
+Report to orchestrator:
+- Site scraped
+- Components extracted
+- Files saved to templates/
+- Suggested usage

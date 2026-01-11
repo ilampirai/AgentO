@@ -1,155 +1,114 @@
+---
+name: web-search
+description: Web search capabilities using Exa MCP for finding documentation, solutions, and code examples.
+---
+
 # Web Search Skill
 
-Intelligent multi-source web search with automatic tool routing.
+Search the web for documentation, solutions, and code examples using Exa MCP.
 
-## Available Tools
+## When to Use
 
-| Tool | Best For | Speed | Depth |
-|------|----------|-------|-------|
-| **Exa** | Semantic search, concepts, tutorials | Fast | Deep |
-| **Context7** | Library docs, API references | Instant | Focused |
-| **grep.app** | Code examples across repos | Fast | Wide |
-| **Playwright** | Live page scraping, testing | Slow | Precise |
+- Finding official documentation
+- Searching for error solutions
+- Looking up API references
+- Finding code examples
+- Researching best practices
 
-## Decision Flow
+## Search Strategies
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    User Query                           │
-└─────────────────────┬───────────────────────────────────┘
-                      │
-        ┌─────────────┼─────────────┐
-        ▼             ▼             ▼
-   "Docs for X"   "How to X"   "Scrape page"
-        │             │             │
-        ▼             ▼             ▼
-   Context7        Exa          Playwright
-   (instant)    (semantic)    (automation)
-```
-
-## When to Use Each Tool
-
-### Context7 - Documentation Lookup
-```
-✅ "What's the API for React useState?"
-✅ "Next.js 14 app router docs"
-✅ "TypeScript generic constraints"
-✅ "FastAPI dependency injection"
-
-❌ Don't use for: opinions, tutorials, real-world examples
-```
-
-### Exa - Semantic Web Search
-```
-✅ "How do I implement OAuth in Node.js?"
-✅ "Best practices for React state management"
-✅ "Explain microservices architecture"
-✅ "Tutorial for setting up Docker"
-
-❌ Don't use for: official docs (use Context7), specific code (use grep.app)
-```
-
-### grep.app Pattern (via Exa)
-```
-Query: site:github.com "implementation pattern"
-
-✅ "How do others implement rate limiting?"
-✅ "Real-world examples of Redux middleware"
-✅ "Production GraphQL resolver patterns"
-
-Use Exa with site:github.com filter for code search
-```
-
-### Playwright - Browser Automation
-```
-✅ Scrape specific page content
-✅ Extract design templates/styles
-✅ Test web applications
-✅ Capture screenshots
-✅ Fill forms, click buttons
-
-❌ Don't use for: general search (too slow)
-```
-
-## Parallel Search Strategy
-
-For complex queries, search multiple sources:
+### Documentation Search
 
 ```
-User: "How should I structure a Next.js 14 app with authentication?"
-
-1. Context7 → Next.js 14 official docs (app router structure)
-2. Exa → "Next.js 14 authentication best practices 2024"
-3. Exa (github) → site:github.com "next.js 14 auth example"
-
-Combine results for comprehensive answer.
+Query: "[library name] [feature] documentation"
+Example: "prisma relations documentation"
 ```
 
-## Query Patterns
+### Error Solutions
 
-### Documentation Query
 ```
-Tool: Context7
-Query: "{library} {feature} documentation"
-Example: "React useEffect cleanup documentation"
+Query: "[error message] [language/framework] solution"
+Example: "TypeError: Cannot read property 'map' of undefined react solution"
 ```
 
-### How-To Query
-```
-Tool: Exa
-Query: "how to {task} in {technology} {year}"
-Example: "how to implement WebSockets in Node.js 2024"
-```
+### Code Examples
 
-### Code Example Query
 ```
-Tool: Exa with site filter
-Query: site:github.com "{pattern}" "{language}"
-Example: site:github.com "JWT authentication" "typescript"
+Query: "[task] [language] example code"
+Example: "jwt authentication nodejs example code"
 ```
 
-### Live Data Query
+### Best Practices
+
 ```
-Tool: Playwright
-Action: Navigate → Snapshot → Extract
-Example: Scrape pricing table from competitor site
-```
-
-## Response Format
-
-After searching, structure response as:
-
-```markdown
-## Sources Consulted
-- [Context7] Official {library} docs
-- [Exa] {article title} - {url}
-
-## Answer
-{synthesized answer from sources}
-
-## Code Example
-{relevant code if found}
-
-## Additional Resources
-- {link 1}
-- {link 2}
+Query: "[topic] best practices [year]"
+Example: "react state management best practices 2024"
 ```
 
-## Error Handling
+## Search Tips
 
-| Error | Fallback |
-|-------|----------|
-| Context7 no results | Try Exa with "official docs {query}" |
-| Exa rate limited | Use Playwright to scrape search results |
-| Playwright timeout | Retry with longer timeout or skip |
+### Be Specific
 
-## Integration with AgentO
+```
+❌ "react hooks"
+✅ "react useEffect cleanup function async"
+```
 
-When orchestrator receives a query:
+### Include Context
 
-1. Classify query type (docs/howto/code/scrape)
-2. Select appropriate tool
-3. Execute search
-4. Synthesize results
-5. Update memory if useful pattern found
+```
+❌ "fix undefined error"
+✅ "fix TypeError undefined is not iterable javascript map"
+```
 
+### Add Version When Relevant
+
+```
+"next.js 14 app router middleware"
+"python 3.11 match statement"
+```
+
+## Processing Results
+
+### Evaluate Sources
+
+```
+Prefer:
+1. Official documentation
+2. GitHub issues/discussions
+3. Stack Overflow (high votes)
+4. Recent blog posts (< 1 year old)
+
+Avoid:
+- Outdated content (> 2 years old usually)
+- Low-quality SEO sites
+- Paywalled content
+```
+
+### Extract Key Information
+
+```
+From documentation:
+- API signatures
+- Required parameters
+- Return types
+- Code examples
+
+From solutions:
+- Root cause
+- Fix approach
+- Caveats/gotchas
+```
+
+## Integration with Memory
+
+After finding solutions:
+1. If error solution found → Add to ERRORS.md
+2. If best practice found → Consider for RULES.md
+3. If useful pattern found → Note in ARCHITECTURE.md
+
+## Rate Limiting
+
+- Don't spam searches
+- Cache results mentally for session
+- Prefer one comprehensive search over many small ones

@@ -1,81 +1,101 @@
 ---
 name: code-quality
-description: Enforces code quality rules including file size limits (500 lines max), duplicate code detection, and best practices. Automatically invoked when writing or reviewing code.
+description: Enforces code quality rules including line limits, duplicate detection, error handling requirements, and commenting standards.
 ---
 
 # Code Quality Skill
 
-This skill ensures all code follows quality standards.
+This skill enforces code quality standards across all code changes.
 
-## When to Invoke
+## Rules
 
-Automatically use this skill when:
-- Writing new code
-- Modifying existing code
-- Reviewing pull requests
-- Refactoring code
-
-## Quality Checks
-
-### 1. File Size Limit
-
-**Rule**: No file should exceed 500 lines.
-
-When a file approaches or exceeds this limit:
-1. Identify logical boundaries for splitting
-2. Extract reusable components/modules
-3. Create new files with clear responsibilities
-4. Update imports and exports
-
-### 2. Duplicate Code Detection
-
-**Rule**: Never write code that already exists.
-
-Before writing code:
-1. Check `.agenticMemory/FUNCTIONS.md` for existing functions
-2. Search codebase for similar patterns
-3. Reuse existing code via imports
-4. If similar code exists, consider refactoring to share
-
-### 3. Naming Conventions
-
-Follow language-specific conventions:
-- **TypeScript/JavaScript**: camelCase for variables, PascalCase for classes
-- **Python**: snake_case for variables, PascalCase for classes
-- **PHP**: camelCase for methods, PascalCase for classes
-
-### 4. Error Handling
-
-All code must handle errors appropriately:
-- Catch specific exceptions
-- Log errors with context
-- Provide meaningful error messages
-- Never swallow errors silently
-
-### 5. Type Safety
-
-Prefer strongly typed code:
-- TypeScript: Use explicit types, avoid `any`
-- Python: Use type hints
-- PHP: Use type declarations
-
-## Enforcement
-
-When a quality rule is violated:
-1. Stop and report the violation
-2. Suggest how to fix it
-3. Only proceed after fix is implemented
-
-## Output Format
+### 1. Line Limits
 
 ```
-## Quality Check: [file_path]
+- Max file length: 500 lines
+- Max function length: 50 lines (prefer < 25)
+- Max line width: 100 characters (prefer 80)
+- Max nesting depth: 4 levels
+```
 
-[x] File size: 245 lines (under 500)
-[x] No duplicates found
-[x] Naming conventions followed
-[ ] VIOLATION: Missing error handling at line 67
+### 2. No Duplicates
 
-### Action Required
-Add try-catch block around database call at line 67.
+```
+Before writing new code:
+1. Search FUNCTIONS.md for similar function names
+2. Search codebase for similar logic
+3. If similar exists, REUSE or EXTEND, don't duplicate
+```
+
+### 3. Error Handling
+
+```
+All functions that can fail MUST:
+- Throw typed errors (not generic Error)
+- Document thrown errors in JSDoc/docstring
+- Handle errors at appropriate level
+- Never silently swallow errors
+```
+
+### 4. Comments
+
+```
+Required:
+- JSDoc/docstring for all public functions
+- @param and @returns documentation
+- Complex logic explanation (WHY, not WHAT)
+
+Forbidden:
+- Commented-out code (delete it)
+- Obvious comments ("increment i")
+- TODO without ticket/issue reference
+```
+
+### 5. Naming
+
+```
+- Functions: verb + noun (getUserById, calculateTotal)
+- Booleans: is/has/can prefix (isValid, hasPermission)
+- Constants: UPPER_SNAKE_CASE
+- Classes: PascalCase, noun
+- Files: kebab-case or camelCase (consistent per project)
+```
+
+## Pre-Write Checklist
+
+Before writing/editing code:
+- [ ] Checked FUNCTIONS.md for existing similar code
+- [ ] Verified file won't exceed 500 lines
+- [ ] Planned error handling approach
+- [ ] Prepared documentation comments
+
+## Post-Write Checklist
+
+After writing/editing code:
+- [ ] All functions have documentation
+- [ ] Error cases are handled
+- [ ] No magic numbers (use constants)
+- [ ] Naming follows conventions
+- [ ] No console.log/print debugging left
+- [ ] File still under 500 lines
+
+## Violation Handling
+
+| Violation | Severity | Action |
+|-----------|----------|--------|
+| File > 500 lines | 🔴 Block | Must split before proceeding |
+| Duplicate code | 🟡 Warning | Should refactor to reuse |
+| Missing error handling | 🟡 Warning | Add try-catch or validation |
+| Missing documentation | 🟢 Note | Add before completion |
+| Poor naming | 🟢 Note | Suggest better name |
+
+## Quality Metrics
+
+Track and report:
+
+```
+- Files over 400 lines: [count]
+- Functions over 30 lines: [count]
+- Undocumented public functions: [count]
+- TODO comments without references: [count]
 ```
