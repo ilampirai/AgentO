@@ -309,16 +309,18 @@ Check `config.json` for `"debug": true/false`.
 ### Agent Line Format (Show on EVERY action)
 
 ```
-🤖 [Orchestrator] → [Agent] | Task: [brief description]
+🤖 AgentO → [Agent] | Task: [brief description]
 ```
+
+**Note**: "AgentO" is the display name for the head orchestrator.
 
 ### Examples
 
 ```
-🤖 Orchestrator → Indexer | Scanning auth area
-🤖 Orchestrator → Coder-TS | Fixing login.ts:45
+🤖 AgentO → Indexer | Scanning auth area
+🤖 AgentO → Coder-TS | Fixing login.ts:45
 🤖 Coder-TS → Reviewer | Code review requested
-🤖 Orchestrator → Tester | Running auto-tests
+🤖 AgentO → Tester | Running auto-tests
 ```
 
 ### Delegation Chain
@@ -326,9 +328,9 @@ Check `config.json` for `"debug": true/false`.
 When one agent calls another, show the chain:
 
 ```
-🤖 Orchestrator → Coder-TS | Writing Game.js
-   └→ Coder-TS → Code-Splitter | File exceeds 500 lines
-      └→ Code-Splitter | Creating GameMovement.js
+🤖 AgentO → Coder-TS | Writing Game.js
+   └→ Coder-TS → Splitter | File exceeds 500 lines
+      └→ Splitter | Creating GameMovement.js
    └→ Coder-TS | Continuing write
 ```
 
@@ -339,10 +341,10 @@ When one agent calls another, show the chain:
 ### Default Output Style
 
 ```
-🤖 Orchestrator → Indexer | Scanning auth area
+🤖 AgentO → Indexer | Scanning auth area
 📚 Indexing auth... ✓ 15 functions
 
-🤖 Orchestrator → Coder-TS | Fixing login.ts:45
+🤖 AgentO → Coder-TS | Fixing login.ts:45
 🔧 Fixing...
 
 ✓ Done. Login redirect fixed.

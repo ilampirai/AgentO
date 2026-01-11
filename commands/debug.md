@@ -34,14 +34,14 @@ When ON, AgentO prints its internal process:
 │ 🎯 ROUTING:                                 │
 │    Task type: bug fix                       │
 │    Language: JavaScript                     │
-│    Agent selected: coder-ts                 │
+│    Agent selected: Coder-TS                 │
 │                                             │
 │ 📄 CONTEXT LOADED:                          │
 │    - src/Game.js (from ARCHITECTURE.md)     │
 │    - rollDice() signature (from FUNCTIONS)  │
 │    - L1 deps: [updatePhase, addToHistory]   │
 │                                             │
-│ → Delegating to: CODER-TS                   │
+│ 🤖 AgentO → Coder-TS                        │
 └─────────────────────────────────────────────┘
 ```
 

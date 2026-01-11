@@ -59,7 +59,7 @@ Proceed with split? (y/n)
 
 ## Output Style
 
-- **ALWAYS show agent line**: `🤖 Orchestrator → [Agent] | [Task]`
+- **ALWAYS show agent line**: `🤖 AgentO → [Agent] | [Task]`
 - Concise (bullets, not paragraphs)
 - 5-min updates on long tasks
 - Full debug output when `/AgentO:debug on`
@@ -68,12 +68,12 @@ Proceed with split? (y/n)
 
 On EVERY action, show:
 ```
-🤖 Orchestrator → Coder-TS | Writing Game.js
+🤖 AgentO → Coder-TS | Writing Game.js
 ```
 
 On delegation chains:
 ```
-🤖 Orchestrator → Coder-TS | Writing Game.js
+🤖 AgentO → Coder-TS | Writing Game.js
    └→ Coder-TS → Splitter | Auto-split (>500 lines)
 ```
 
