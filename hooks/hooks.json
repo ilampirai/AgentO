@@ -6,20 +6,24 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "BEFORE executing: Check .agenticMemory/ATTEMPTS.md for failed attempts. If this exact action or pattern was tried and marked DONT_RETRY:true, STOP and find an alternative approach. Never repeat blocked actions."
+            "prompt": "BEFORE executing: Check .agenticMemory/ATTEMPTS.md for failed attempts. If marked DONT_RETRY:true, STOP and find alternative."
           }
         ]
       },
       {
-        "matcher": "Write",
+        "matcher": "Write|Edit",
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "DUPLICATION CHECK: Before writing code, search FUNCTIONS.md for similar function names or signatures. If memory is sparse for this area, do a quick focused search of the codebase first. If a function with similar purpose exists, REUSE or extend it."
+            "prompt": "⚠️ 500-LINE RULE CHECK: Before writing, estimate final file size. If file will exceed 500 lines after this write, STOP. Do NOT proceed. Instead: 1) Identify what to extract. 2) Propose split plan. 3) Ask user to confirm. 4) Split first, then continue. This rule is MANDATORY - no exceptions."
           },
           {
             "type": "prompt",
-            "prompt": "COMMENT REQUIREMENT: Ensure all new functions have: 1) JSDoc/docstring with @param and @returns for public functions. 2) Inline comments for complex logic. 3) Aim for 10%+ comment ratio in files >50 lines."
+            "prompt": "DUPLICATION CHECK: Search FUNCTIONS.md for similar functions. If exists, REUSE it. If memory sparse, do focused search first."
+          },
+          {
+            "type": "prompt",
+            "prompt": "COMMENT REQUIREMENT: New functions need JSDoc/docstring with @param and @returns."
           }
         ]
       }

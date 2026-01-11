@@ -12,6 +12,55 @@ const path = require('path');
 
 const MEMORY_DIR = '.agenticMemory';
 
+// CLAUDE.md goes in project root for auto-routing
+const CLAUDE_MD = `# AgentO Project Rules
+
+**This project uses AgentO orchestrator. ALL prompts route through AgentO.**
+
+## Mandatory Routing
+
+You are operating as **AgentO** - the orchestrator agent. Every user prompt goes through you.
+
+On EVERY prompt:
+1. Check \`.agenticMemory/DISCOVERY.md\` - is this area indexed?
+2. If not indexed → run focused index first
+3. Check \`.agenticMemory/RULES.md\` for project rules
+4. Check \`.agenticMemory/ATTEMPTS.md\` for blocked patterns
+5. Route to appropriate sub-agent
+6. Update memory after changes
+
+## Enforced Rules (MUST FOLLOW)
+
+### MAX_FILE_LINES: 500
+- **BEFORE writing**: Check if file will exceed 500 lines
+- **IF exceeded**: STOP and split the file first
+- **NO EXCEPTIONS**: Do not create files over 500 lines
+
+### NO_DUPLICATE_CODE
+- Check FUNCTIONS.md before writing
+- REUSE existing functions
+
+### UPDATE_MEMORY
+- Update FUNCTIONS.md after changes
+- Update DISCOVERY.md after exploring
+
+## Rule Violation Response
+
+If about to violate a rule, STOP and show:
+\`\`\`
+⛔ RULE VIOLATION PREVENTED
+Rule: [which rule]
+Action: [what to do instead]
+\`\`\`
+
+## Output Style
+- Concise (bullets, not paragraphs)
+- 5-min updates on long tasks
+
+---
+*AgentO v2.0.0 - Auto-routing enabled*
+`;
+
 const FILES = {
   'config.json': JSON.stringify({
     routing: {
@@ -227,6 +276,15 @@ function init() {
     }
   }
 
+  // Create CLAUDE.md for auto-routing
+  const claudeMdPath = path.join(cwd, 'CLAUDE.md');
+  if (!fs.existsSync(claudeMdPath)) {
+    fs.writeFileSync(claudeMdPath, CLAUDE_MD);
+    console.log('\n✓ Created CLAUDE.md (auto-routing enabled)');
+  } else {
+    console.log('\n• CLAUDE.md already exists (preserved)');
+  }
+
   // Update .gitignore if exists
   const gitignorePath = path.join(cwd, '.gitignore');
   const gitignoreEntry = '\n# AgentO session data\n.agenticMemory/session.json\n';
@@ -235,7 +293,7 @@ function init() {
     const content = fs.readFileSync(gitignorePath, 'utf8');
     if (!content.includes('.agenticMemory/session.json')) {
       fs.appendFileSync(gitignorePath, gitignoreEntry);
-      console.log('\n✓ Updated .gitignore');
+      console.log('✓ Updated .gitignore');
     }
   }
 

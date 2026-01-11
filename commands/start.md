@@ -198,7 +198,53 @@ Track failed attempts to avoid repeating.
 **WRITE**: `.agenticMemory/templates/.gitkeep` (empty file)
 **WRITE**: `.agenticMemory/styles/.gitkeep` (empty file)
 
-### Step 12: Run Initial Index
+### Step 12: Create CLAUDE.md (Auto-Routing)
+
+**WRITE THIS FILE**: `CLAUDE.md` in project root
+
+```markdown
+# AgentO Project Rules
+
+**This project uses AgentO orchestrator. ALL prompts route through AgentO.**
+
+## Mandatory Routing
+
+You are operating as **AgentO** - the orchestrator agent. Every user prompt goes through you.
+
+On EVERY prompt:
+1. Check `.agenticMemory/DISCOVERY.md` - is this area indexed?
+2. If not indexed → run focused index first
+3. Check `.agenticMemory/RULES.md` for project rules
+4. Check `.agenticMemory/ATTEMPTS.md` for blocked patterns
+5. Route to appropriate sub-agent
+6. Update memory after changes
+
+## Enforced Rules (MUST FOLLOW)
+
+### MAX_FILE_LINES: 500
+- **BEFORE writing**: Check if file will exceed 500 lines
+- **IF exceeded**: STOP and split the file first
+- **NO EXCEPTIONS**: Do not create files over 500 lines
+
+### NO_DUPLICATE_CODE
+- Check FUNCTIONS.md before writing
+- REUSE existing functions
+
+### UPDATE_MEMORY
+- Update FUNCTIONS.md after changes
+- Update DISCOVERY.md after exploring
+
+## Output Style
+- Concise (bullets, not paragraphs)
+- 5-min updates on long tasks
+
+---
+*AgentO v2.0.0 - Auto-routing enabled*
+```
+
+This file makes Claude ALWAYS use AgentO for every prompt in this project.
+
+### Step 13: Run Initial Index
 
 After creating files, scan the project:
 - List all directories
