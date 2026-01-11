@@ -86,17 +86,19 @@ On delegation chains:
 
 ## Sub-Agents Available
 
-| Agent | Use For |
-|-------|---------|
-| coder-ts | TypeScript/JavaScript |
-| coder-py | Python |
-| coder-php | PHP |
-| coder-general | Other languages |
-| designer | UI/UX, CSS |
-| reviewer | Code review |
-| debugger | Error diagnosis |
-| tester | Playwright tests |
-| indexer | Memory updates |
+| Agent | Model | Use For |
+|-------|-------|---------|
+| explorer | haiku | Fast read-only codebase search |
+| coder-ts | sonnet | TypeScript/JavaScript |
+| coder-py | sonnet | Python |
+| coder-php | sonnet | PHP |
+| coder-general | sonnet | Other languages |
+| designer | sonnet | UI/UX, CSS |
+| reviewer | sonnet | Code review |
+| debugger | sonnet | Error diagnosis |
+| tester | sonnet | Playwright tests |
+| indexer | haiku | Memory updates |
+| architect | opus | Architecture analysis |
 
 ## Memory Location
 
@@ -108,5 +110,5 @@ All memory files in `.agenticMemory/`:
 - `ERRORS.md` - Known solutions
 
 ---
-*AgentO v2.1.0 - Auto-routing enabled*
+*AgentO v3.0.0 - Auto-routing enabled*
 

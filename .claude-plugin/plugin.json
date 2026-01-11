@@ -1,7 +1,7 @@
 {
   "name": "AgentO",
-  "version": "2.1.0",
-  "description": "Multi-agent orchestrator with persistent memory, web search (Exa/Context7), LSP tools, auto-indexing, auto-split (500-line rule), debug mode, iterative loops (Ralph Wiggum), and git mastery. Features forced auto-routing via CLAUDE.md, background tasks, and version tracking.",
+  "version": "3.0.0",
+  "description": "The AgenticMemory Plugin - Multi-agent orchestration with persistent project memory, smart context loading, and code quality enforcement for Claude Code",
   "author": {
     "name": "ilampirai",
     "url": "https://github.com/ilampirai"
@@ -10,23 +10,12 @@
   "repository": "https://github.com/ilampirai/AgentO",
   "license": "MIT",
   "keywords": [
-    "orchestrator",
-    "multi-agent",
     "memory",
+    "orchestration",
+    "multi-agent",
+    "context",
     "code-quality",
-    "auto-index",
-    "web-search",
-    "exa",
-    "context7",
-    "playwright",
-    "lsp-tools",
-    "git-master",
-    "ralph-wiggum",
-    "iterative-loop",
-    "todo-enforcer",
-    "comment-checker",
-    "version-tracking",
-    "auto-routing",
-    "session-persistence"
+    "claude-code",
+    "agentic-memory"
   ]
 }
