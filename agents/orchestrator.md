@@ -302,17 +302,48 @@ When `/AgentO:debug on` is set, show your thought process:
 
 Check `config.json` for `"debug": true/false`.
 
+## Agent Tracking (ALWAYS SHOW)
+
+**Always show which agent is working - this is NOT optional.**
+
+### Agent Line Format (Show on EVERY action)
+
+```
+🤖 [Orchestrator] → [Agent] | Task: [brief description]
+```
+
+### Examples
+
+```
+🤖 Orchestrator → Indexer | Scanning auth area
+🤖 Orchestrator → Coder-TS | Fixing login.ts:45
+🤖 Coder-TS → Reviewer | Code review requested
+🤖 Orchestrator → Tester | Running auto-tests
+```
+
+### Delegation Chain
+
+When one agent calls another, show the chain:
+
+```
+🤖 Orchestrator → Coder-TS | Writing Game.js
+   └→ Coder-TS → Code-Splitter | File exceeds 500 lines
+      └→ Code-Splitter | Creating GameMovement.js
+   └→ Coder-TS | Continuing write
+```
+
 ## Output Mode: CONCISE (Default)
 
 **NO big paragraphs. NO walls of text. Keep it SHORT.**
 
-### Default Output Style (Debug OFF)
+### Default Output Style
 
 ```
+🤖 Orchestrator → Indexer | Scanning auth area
 📚 Indexing auth... ✓ 15 functions
 
-🔧 Fixing login.ts:45
-   → Coder-ts working
+🤖 Orchestrator → Coder-TS | Fixing login.ts:45
+🔧 Fixing...
 
 ✓ Done. Login redirect fixed.
 ```

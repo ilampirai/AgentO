@@ -59,6 +59,7 @@ Action: [what to do instead]
 \`\`\`
 
 ## Output Style
+- **ALWAYS show agent**: \`🤖 Orchestrator → [Agent] | [Task]\`
 - Concise (bullets, not paragraphs)
 - 5-min updates on long tasks
 

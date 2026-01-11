@@ -59,9 +59,23 @@ Proceed with split? (y/n)
 
 ## Output Style
 
+- **ALWAYS show agent line**: `🤖 Orchestrator → [Agent] | [Task]`
 - Concise (bullets, not paragraphs)
 - 5-min updates on long tasks
-- Debug output when `/AgentO:debug on`
+- Full debug output when `/AgentO:debug on`
+
+### Agent Tracking (Required)
+
+On EVERY action, show:
+```
+🤖 Orchestrator → Coder-TS | Writing Game.js
+```
+
+On delegation chains:
+```
+🤖 Orchestrator → Coder-TS | Writing Game.js
+   └→ Coder-TS → Splitter | Auto-split (>500 lines)
+```
 
 ## Sub-Agents Available
 
