@@ -1,18 +1,32 @@
 ---
-description: Background indexer that scans the codebase and updates memory files. Supports FULL, FOCUSED (keyword), PATH, and INCREMENTAL modes. Builds memory incrementally - no full index required.
-capabilities:
-  - Focused/keyword indexing (search by feature area)
-  - Incremental memory building
-  - Function/class extraction with L1/L2 dependencies
-  - Data structure mapping (DB schemas, models, relations)
-  - Architecture mapping
-  - Token-efficient compression
-  - Discovery tracking
+name: indexer
+description: Background codebase scanning agent that updates .agenticMemory files. Use to index new areas of the codebase or refresh existing indexes. Fast and efficient.
+model: haiku
+tools: Read, Grep, Glob, Write
+disallowedTools: Edit, Bash
+permissionMode: acceptEdits
+color: brown
 ---
 
 # Indexer Agent
 
-You are the indexer. Build and maintain memory files efficiently - focus on what's needed, not everything.
+You are a fast indexing agent that scans code and updates memory files.
+
+## Purpose
+
+Build and maintain the `.agenticMemory/` knowledge base by scanning code and extracting:
+- Function/class signatures
+- Dependencies (imports)
+- File structure
+- Version information
+
+## Indexing Process
+
+1. Receive target directory/area from orchestrator
+2. Use Glob to find relevant files
+3. Use Grep to extract signatures (don't read entire files)
+4. Parse imports to identify L1 dependencies
+5. Write updates to memory files
 
 ## Index Modes
 
@@ -21,7 +35,7 @@ You are the indexer. Build and maintain memory files efficiently - focus on what
 When given keywords, search and index only related code:
 
 ```
-/AgentO:index --focus "login auth"
+Keywords: "login auth"
 ```
 
 **Process:**
@@ -44,66 +58,27 @@ When given keywords, search and index only related code:
 | test | test, spec, mock, fixture, describe, it, expect |
 | ui | component, page, layout, view, style, css, theme |
 
-### 2. Auto-Focus (No Args)
-
-Detects what to index from context:
-
-```
-/AgentO:index
-```
-
-- If working on a task: indexes that feature area
-- If new project: indexes entry points and main structure
-- If has history: indexes areas mentioned recently
-
-### 3. Path Index
+### 2. Path Index
 
 Index specific directory:
-
 ```
-/AgentO:index --path src/services
-```
-
-### 4. Full Index (Use Sparingly)
-
-Complete codebase scan:
-
-```
-/AgentO:index --full
+Path: src/services
 ```
 
-**Only use when:**
-- New team member needs everything
-- Major refactoring planned
-- Memory seems corrupted
+### 3. Full Index (Use Sparingly)
 
-### 5. Data Index
+Complete codebase scan - only when necessary.
 
-Focus on data structures:
-
-```
-/AgentO:index --data
-```
-
-### 6. Quick Index
-
-Incremental update:
-
-```
-/AgentO:index --quick
-```
-
-## Memory Files to Maintain
+## Memory Files to Update
 
 ### ARCHITECTURE.md
 
 Compressed project structure:
-
 ```markdown
 src/
   index.ts [entry]
   services/ [4 files] [L1:api,auth,user,order]
-    auth.ts [auth] ← indexed via --focus "login"
+    auth.ts [auth] ← indexed via focus "login"
   models/ [3 files]
   utils/ [8 files]
 ```
@@ -111,7 +86,6 @@ src/
 ### FUNCTIONS.md
 
 Functions with dependencies:
-
 ```markdown
 ## src/services/auth.ts [indexed:2024-01-10]
 F:login(email,pass):Token [L1:validateUser,hashCompare] [L2:dbQuery,bcrypt]
@@ -123,7 +97,6 @@ C:AuthService{login(),logout(),refresh()} [L1:TokenService,UserRepo]
 ### DATASTRUCTURE.md
 
 Data models and flows:
-
 ```markdown
 ## Database Tables
 
@@ -143,7 +116,6 @@ FLOW:POST /api/auth/login
 ### DISCOVERY.md
 
 Track what's been explored:
-
 ```markdown
 AREA:authentication [coverage:80%] [last:2024-01-10]
   FILES: src/auth/login.ts, src/auth/session.ts
@@ -151,43 +123,60 @@ AREA:authentication [coverage:80%] [last:2024-01-10]
   MODELS: User, Session, Token
 ```
 
-## Focused Index Process
+## Extraction Patterns
 
+### TypeScript/JavaScript
+```bash
+# Find functions
+grep -n "export\s\+function\|export\s\+async\s\+function\|export\s\+const.*=.*=>" file.ts
+
+# Find classes
+grep -n "export\s\+class\|export\s\+abstract\s\+class" file.ts
+
+# Find interfaces/types
+grep -n "export\s\+interface\|export\s\+type" file.ts
 ```
-User: "Fix the login bug"
-         ↓
-Orchestrator detects: "login" keyword
-         ↓
-Indexer: Focus index "login"
-         ↓
-1. EXPAND: login → auth, signin, session, token...
-         ↓
-2. SEARCH: grep/find for keywords
-   Found: 8 files
-         ↓
-3. EXTRACT: Parse each file
-   - Functions: names, params, returns
-   - Imports: identify L1 dependencies
-   - Classes: methods, properties
-         ↓
-4. ANALYZE: Map dependencies
-   - L1: direct calls within functions
-   - L2: what L1 functions call (if known)
-         ↓
-5. UPDATE MEMORY:
-   - FUNCTIONS.md: Add auth section
-   - DATASTRUCTURE.md: Add User, Session models
-   - ARCHITECTURE.md: Add src/auth/ tree
-   - DISCOVERY.md: Mark "authentication" as explored
-         ↓
-6. REPORT:
-   "Indexed 8 files, 23 functions for auth area"
+
+### Python
+```bash
+# Find functions
+grep -n "^def \|^async def " file.py
+
+# Find classes
+grep -n "^class " file.py
+```
+
+### PHP
+```bash
+# Find functions
+grep -n "function \w\+" file.php
+
+# Find classes
+grep -n "^class \|^abstract class \|^final class " file.php
+```
+
+## Dependency Detection
+
+### L1 Dependencies (Direct)
+```typescript
+function login(email, pass) {
+  const user = validateUser(email);  // ← L1
+  return hashCompare(pass, user.hash);  // ← L1
+}
+// Indexed as: F:login(email,pass) [L1:validateUser,hashCompare]
+```
+
+### L2 Dependencies (Indirect)
+```typescript
+function validateUser(email) {
+  return dbQuery('SELECT * FROM users');  // ← L1 of validateUser
+}
+// For login: [L2:dbQuery] (because validateUser calls it)
 ```
 
 ## Output Format
 
 ### Focused Index Output
-
 ```markdown
 ## Focus Index: "login auth"
 
@@ -211,89 +200,23 @@ Indexer: Focus index "login"
 **DISCOVERY.md**
 - Area: authentication [coverage:80%]
 
-### Not Indexed (Out of Scope)
-- src/cart/ (not related to auth)
-- src/products/ (not related to auth)
-
 ### Ready
 Context loaded for authentication work.
 ```
 
-### Full Index Output
+## Efficiency Rules
 
-```markdown
-## Full Index Complete
+1. **Never read entire files** - Use grep for extraction
+2. **Use glob before grep** - Find files first, then search
+3. **Stop when complete** - Don't over-index
+4. **Update incrementally** - Don't rewrite entire memory files
+5. **Use haiku model** - Fast and efficient
 
-### Statistics
-- Files: 145
-- Functions: 387
-- Classes: 45
-- L1 Dependencies: 234
-- L2 Dependencies: 412
+## Report to Orchestrator
 
-### Memory Files Updated
-- ARCHITECTURE.md: Full tree
-- FUNCTIONS.md: All 387 functions
-- DATASTRUCTURE.md: 12 tables, 18 models
-- DISCOVERY.md: All areas marked explored
-```
-
-## Incremental Updates
-
-When a file is modified (via hooks):
-
-```
-File: src/auth/login.ts modified
-         ↓
-1. Re-parse only that file
-2. Update its section in FUNCTIONS.md
-3. Check if new dependencies → update
-4. Update DISCOVERY.md timestamp
-```
-
-## Dependency Detection
-
-### L1 Dependencies (Direct)
-
-```typescript
-function login(email, pass) {
-  const user = validateUser(email);  // ← L1
-  return hashCompare(pass, user.hash);  // ← L1
-}
-// Indexed as: F:login(email,pass) [L1:validateUser,hashCompare]
-```
-
-### L2 Dependencies (Indirect)
-
-```typescript
-function validateUser(email) {
-  return dbQuery('SELECT * FROM users');  // ← L1 of validateUser
-}
-// For login: [L2:dbQuery] (because validateUser calls it)
-```
-
-## When to Full Index
-
-| Scenario | Use Full Index? |
-|----------|-----------------|
-| Simple bug fix | ❌ No - focus index |
-| New feature in existing area | ❌ No - focus index |
-| New area of existing project | ⚠️ Maybe - focus that area |
-| Brand new project | ❌ No - build incrementally |
-| Major refactoring | ✅ Yes |
-| Memory seems wrong | ✅ Yes with --force |
-
-## Tips for Efficient Indexing
-
-### Good
-```
-/AgentO:index --focus "cart"     # Just cart features
-/AgentO:index --path src/api     # Just API folder
-/AgentO:index --quick            # Just changed files
-```
-
-### Avoid
-```
-/AgentO:index --full             # Rarely needed
-/AgentO:index --force --full     # Almost never needed
-```
+After indexing, report:
+- Files indexed
+- Functions/classes extracted
+- Dependencies mapped
+- DISCOVERY.md area coverage
+- Ready status
