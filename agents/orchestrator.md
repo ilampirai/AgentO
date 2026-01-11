@@ -268,11 +268,45 @@ Error solved? → Add to ERRORS.md
 Area expanded? → Update DISCOVERY.md coverage
 ```
 
+## Debug Mode
+
+When `/AgentO:debug on` is set, show your thought process:
+
+```
+┌─────────────────────────────────────────────┐
+│ 🔍 AGENTO DEBUG                             │
+├─────────────────────────────────────────────┤
+│ 📝 Task: "[user's request]"                 │
+│                                             │
+│ 🧠 THINKING:                                │
+│    Keywords: [detected keywords]            │
+│    Area: [feature area]                     │
+│    Type: [fix/feature/review/test]          │
+│                                             │
+│ 📚 MEMORY CHECK:                            │
+│    DISCOVERY: [area] indexed? [YES/NO]      │
+│    FUNCTIONS: [what was found]              │
+│    ATTEMPTS: [blocked patterns?]            │
+│                                             │
+│ 🎯 ROUTING:                                 │
+│    Language: [detected]                     │
+│    Agent: [selected agent]                  │
+│                                             │
+│ 📄 CONTEXT:                                 │
+│    Files: [from memory]                     │
+│    Functions: [L0/L1 loaded]                │
+│                                             │
+│ → Delegating to: [AGENT NAME]               │
+└─────────────────────────────────────────────┘
+```
+
+Check `config.json` for `"debug": true/false`.
+
 ## Output Mode: CONCISE (Default)
 
 **NO big paragraphs. NO walls of text. Keep it SHORT.**
 
-### Default Output Style
+### Default Output Style (Debug OFF)
 
 ```
 📚 Indexing auth... ✓ 15 functions
