@@ -4,7 +4,7 @@ description: Initialize AgentO in a new project. Sets up memory files and config
 
 # Start Command
 
-Initialize AgentO in a new project. Creates the memory directory structure and runs initial indexing.
+Initialize AgentO in a new project.
 
 ## Usage
 
@@ -12,114 +12,232 @@ Initialize AgentO in a new project. Creates the memory directory structure and r
 /AgentO:start
 ```
 
-## What It Does
+## ⚠️ CRITICAL: YOU MUST CREATE FILES
 
-1. **Creates .agenticMemory/ directory structure**:
-   ```
+When this command runs, you MUST use the **Write tool** to create each file below.
+Do NOT just describe what to create - ACTUALLY WRITE THE FILES.
+
+## Step-by-Step Execution
+
+### Step 1: Create Directory Structure
+
+Create these directories (they'll be created when you write files to them):
+- `.agenticMemory/`
+- `.agenticMemory/agents/`
+- `.agenticMemory/templates/`
+- `.agenticMemory/styles/`
+
+### Step 2: Create config.json
+
+**WRITE THIS FILE**: `.agenticMemory/config.json`
+
+```json
+{
+  "routing": {
+    "coder": "coder-ts",
+    "coder-py": "coder-py",
+    "coder-php": "coder-php",
+    "coder-general": "coder-general",
+    "designer": "designer",
+    "reviewer": "reviewer",
+    "debugger": "debugger",
+    "tester": "tester",
+    "indexer": "indexer"
+  },
+  "lastIndexed": null,
+  "fileCount": 0,
+  "functionCount": 0
+}
+```
+
+### Step 3: Create RULES.md
+
+**WRITE THIS FILE**: `.agenticMemory/RULES.md`
+
+```markdown
+# Project Rules
+
+All agents must follow these rules.
+
+## System Rules
+- MAX_FILE_LINES: 500
+- NO_DUPLICATE_CODE: true
+- REQUIRE_TYPES: true
+- UPDATE_MEMORY_AFTER_CHANGES: true
+
+## Custom Rules
+(Add your project-specific rules here)
+
+## Disabled Rules
+(Temporarily disabled rules go here)
+```
+
+### Step 4: Create ARCHITECTURE.md
+
+**WRITE THIS FILE**: `.agenticMemory/ARCHITECTURE.md`
+
+```markdown
+# Architecture
+
+Project structure overview.
+
+## Directory Tree
+(Will be populated by /AgentO:index)
+
+## Key Files
+| File | Purpose |
+|------|---------|
+| | |
+
+---
+*Last indexed: Never*
+```
+
+### Step 5: Create FUNCTIONS.md
+
+**WRITE THIS FILE**: `.agenticMemory/FUNCTIONS.md`
+
+```markdown
+# Function Index
+
+## Format
+F:name(params):return [L1:deps]
+C:Class{methods} [L1:deps]
+
+## Index
+(Will be populated by /AgentO:index)
+
+---
+*Last indexed: Never*
+```
+
+### Step 6: Create DATASTRUCTURE.md
+
+**WRITE THIS FILE**: `.agenticMemory/DATASTRUCTURE.md`
+
+```markdown
+# Data Structure Map
+
+## Tables
+(Will be populated by /AgentO:index --data)
+
+## Models
+(Will be populated by /AgentO:index --data)
+
+---
+*Last indexed: Never*
+```
+
+### Step 7: Create ERRORS.md
+
+**WRITE THIS FILE**: `.agenticMemory/ERRORS.md`
+
+```markdown
+# Known Errors & Solutions
+
+## Format
+ERR001: Description
+FIX: Solution
+FILES: Affected files
+
+## Errors
+(Add solved errors here)
+```
+
+### Step 8: Create ATTEMPTS.md
+
+**WRITE THIS FILE**: `.agenticMemory/ATTEMPTS.md`
+
+```markdown
+# Attempted Actions
+
+Track failed attempts to avoid repeating.
+
+## Blocked Patterns
+(Actions marked DONT_RETRY:true)
+
+## Attempts Log
+(Recent attempts)
+```
+
+### Step 9: Create DISCOVERY.md
+
+**WRITE THIS FILE**: `.agenticMemory/DISCOVERY.md`
+
+```markdown
+# Discovery Tracking
+
+## Explored Areas
+(Auto-populated as AgentO explores)
+
+## Coverage Summary
+| Area | Files | Functions | Coverage |
+|------|-------|-----------|----------|
+| | | | |
+```
+
+### Step 10: Create VERSIONS.md
+
+**WRITE THIS FILE**: `.agenticMemory/VERSIONS.md`
+
+```markdown
+# Dependency Versions
+
+## Dependencies
+(Auto-populated when package files change)
+
+## Change Log
+| Date | Package | From | To |
+|------|---------|------|-----|
+| | | | |
+```
+
+### Step 11: Create placeholder in subdirs
+
+**WRITE**: `.agenticMemory/agents/.gitkeep` (empty file)
+**WRITE**: `.agenticMemory/templates/.gitkeep` (empty file)
+**WRITE**: `.agenticMemory/styles/.gitkeep` (empty file)
+
+### Step 12: Run Initial Index
+
+After creating files, scan the project:
+- List all directories
+- Extract functions from code files
+- Update ARCHITECTURE.md with tree
+- Update FUNCTIONS.md with signatures
+
+## Output After Completion
+
+```
+✅ AgentO Initialized
+
+📁 Created:
    .agenticMemory/
-   ├── agents/           # User-defined agents
-   ├── templates/        # Scraped design templates
-   ├── styles/           # Style guides
-   ├── config.json       # Agent routing config
-   ├── session.json      # Session persistence
-   ├── ARCHITECTURE.md   # Project structure
-   ├── FUNCTIONS.md      # Code index
-   ├── ERRORS.md         # Error solutions
-   └── RULES.md          # Project rules
-   ```
+   ├── config.json
+   ├── RULES.md
+   ├── ARCHITECTURE.md
+   ├── FUNCTIONS.md
+   ├── DATASTRUCTURE.md
+   ├── ERRORS.md
+   ├── ATTEMPTS.md
+   ├── DISCOVERY.md
+   ├── VERSIONS.md
+   ├── agents/
+   ├── templates/
+   └── styles/
 
-2. **Creates default config.json**:
-   ```json
-   {
-     "routing": {
-       "coder": "coder-ts",
-       "coder-py": "coder-py",
-       "coder-php": "coder-php",
-       "coder-general": "coder-general",
-       "designer": "designer",
-       "reviewer": "reviewer",
-       "debugger": "debugger",
-       "tester": "tester"
-     },
-     "lastIndexed": null,
-     "fileCount": 0,
-     "functionCount": 0
-   }
-   ```
+📊 Initial Index:
+   Files: X | Functions: X | Classes: X
 
-3. **Creates default RULES.md**:
-   ```markdown
-   ## System Rules
-   - MAX_FILE_LINES: 500
-   - NO_DUPLICATE_CODE: true
-   - REQUIRE_TYPES: true
-
-   ## Custom Rules
-   (Add your project-specific rules here)
-
-   ## Disabled Rules
-   (Temporarily disabled rules go here)
-   ```
-
-4. **Runs initial index** to populate:
-   - ARCHITECTURE.md
-   - FUNCTIONS.md
-
-5. **Adds to .gitignore** (if exists):
-   ```
-   # AgentO session data
-   .agenticMemory/session.json
-   ```
-
-## Output
-
-```
-## AgentO Initialized
-
-### Directory Created
-.agenticMemory/
-
-### Files Created
-- config.json (default routing)
-- RULES.md (system rules)
-- ARCHITECTURE.md (project structure)
-- FUNCTIONS.md (code index)
-- ERRORS.md (empty)
-
-### Initial Index
-- Files scanned: 23
-- Functions found: 67
-- Classes found: 12
-
-### Next Steps
-1. Review and customize RULES.md
-2. Use /AgentO:agents list to see available agents
-3. Start coding! The orchestrator will help.
-
-### Commands Available
-- /AgentO:index - Re-index codebase
-- /AgentO:agents - Manage agents
-- /AgentO:rules - Manage rules
-- /AgentO:session - Session management
-- /AgentO:design - UI/UX tools
+🚀 Ready! Use /AgentO:index for full scan.
 ```
 
-## Idempotent
+## Alternative: Use Init Script
 
-Running `/AgentO:start` again will:
-- NOT overwrite existing files
-- Update ARCHITECTURE.md and FUNCTIONS.md
-- Report what already exists
+You can also run the init script directly:
 
+```bash
+node path/to/AgentO/scripts/init.js
 ```
-## AgentO Already Initialized
 
-Existing files preserved:
-- config.json (kept)
-- RULES.md (kept)
-- ERRORS.md (kept)
-
-Updated files:
-- ARCHITECTURE.md (re-indexed)
-- FUNCTIONS.md (re-indexed)
-```
+This creates all files without needing Claude.
