@@ -16,32 +16,45 @@ AgentO provides hard enforcement of code quality rules at the tool level. Unlike
 
 ## Installation
 
-### Via Claude Code Marketplace
+### Step 1: Install AgentO Plugin
 
+Via Claude Code Marketplace:
 ```
 /install agento
 ```
 
-### Manual Installation
+### Step 2: Add MCP Server
 
-1. Clone this repository
-2. Build the MCP server:
-   ```bash
-   cd mcp-server
-   npm install
-   npm run build
-   ```
-3. Add to your project's `.mcp.json`:
-   ```json
-   {
-     "mcpServers": {
-       "agento": {
-         "command": "node",
-         "args": ["/path/to/agento/mcp-server/dist/index.js"]
-       }
-     }
-   }
-   ```
+Add to your project's `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "agento": {
+      "command": "npx",
+      "args": ["-y", "@ilampirai/agento-mcp"]
+    }
+  }
+}
+```
+
+That's it! The MCP server is downloaded automatically when needed (like Playwright MCP).
+
+### Alternative: Global Install
+
+```bash
+npm install -g @ilampirai/agento-mcp
+```
+
+```json
+{
+  "mcpServers": {
+    "agento": {
+      "command": "agento-mcp"
+    }
+  }
+}
+```
 
 ## Quick Start
 

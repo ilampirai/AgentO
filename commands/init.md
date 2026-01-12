@@ -12,6 +12,21 @@ Initialize AgentO in your project.
 /agento:init
 ```
 
+## Prerequisites
+
+Add to your project's `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "agento": {
+      "command": "npx",
+      "args": ["-y", "@ilampirai/agento-mcp"]
+    }
+  }
+}
+```
+
 ## What It Does
 
 1. Creates `.agenticMemory/` directory

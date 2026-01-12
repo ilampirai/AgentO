@@ -1,24 +1,47 @@
 {
-  "name": "agento-mcp",
+  "name": "@ilampirai/agento-mcp",
   "version": "4.0.0",
-  "description": "AgentO MCP Server - Hard enforcement for code quality and memory management",
+  "description": "AgentO MCP Server - Hard enforcement for code quality and memory management in Claude Code",
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "agento-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
     "start": "node dist/index.js",
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "mcp",
     "claude",
+    "claude-code",
     "agento",
     "code-quality",
-    "memory"
+    "memory",
+    "testing",
+    "enforcement",
+    "model-context-protocol"
   ],
-  "author": "ilampirai",
+  "author": {
+    "name": "ilampirai",
+    "url": "https://github.com/ilampirai"
+  },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ilampirai/AgentO.git"
+  },
+  "homepage": "https://github.com/ilampirai/AgentO#readme",
+  "bugs": {
+    "url": "https://github.com/ilampirai/AgentO/issues"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
@@ -29,6 +52,9 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
 

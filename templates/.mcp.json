@@ -1,12 +1,8 @@
 {
   "mcpServers": {
     "agento": {
-      "command": "node",
-      "args": ["./node_modules/agento-mcp/dist/index.js"],
-      "env": {
-        "AGENTO_MEMORY_PATH": "./.agenticMemory"
-      }
+      "command": "npx",
+      "args": ["-y", "@ilampirai/agento-mcp"]
     }
   }
 }
-
