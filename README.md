@@ -63,6 +63,7 @@ The `.claude/rules/` file ensures AgentO tools are used for ALL prompts automati
 | `agento_write` | Write file with rule enforcement |
 | `agento_read` | Read file with tracking |
 | `agento_bash` | Execute command safely |
+| `agento_search` | Smart codebase search with memory integration |
 | `agento_memory` | Direct memory file access |
 | `agento_rules` | CRUD for rules |
 | `agento_functions` | Query function index |
@@ -140,6 +141,7 @@ AgentO MCP Server
 ├── agento_write → Checks rules → Updates FUNCTIONS.md
 ├── agento_read → Updates DISCOVERY.md
 ├── agento_bash → Checks ATTEMPTS.md
+├── agento_search → Memory-first search → Updates DISCOVERY.md
 └── agento_test → Auto-detects framework
      ↓
 Memory Files (.agenticMemory/)

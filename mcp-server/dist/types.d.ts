@@ -100,6 +100,14 @@ export interface ConfigInput {
     key?: string;
     value?: string | number | boolean;
 }
+export interface SearchInput {
+    query: string;
+    type?: 'content' | 'files' | 'functions';
+    path?: string;
+    include?: string;
+    exclude?: string;
+    maxResults?: number;
+}
 export interface AgentOConfig {
     lineLimit: number;
     strictMode: boolean;

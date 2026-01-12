@@ -31,8 +31,9 @@ For the given prompt, complete the task using ONLY these tools:
 | Run commands | `agento_bash` |
 | Run tests | `agento_test` |
 | Iterate fixes | `agento_loop` |
+| Search code | `agento_search` |
 
-**Do NOT use built-in Write, Read, or Bash tools.**
+**Do NOT use built-in Write, Read, Bash, Grep, or Glob tools.**
 
 The AgentO tools automatically:
 - Update memory files

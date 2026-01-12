@@ -28,6 +28,7 @@ AgentO MCP provides tools that enforce code quality on every file operation:
 | `agento_write` | Write files with rule enforcement (line limits, duplicates) |
 | `agento_read` | Read files with auto-indexing |
 | `agento_bash` | Execute commands safely |
+| `agento_search` | Smart codebase search with memory integration |
 | `agento_rules` | Manage project rules |
 | `agento_functions` | Query function index |
 | `agento_index` | Index the codebase |

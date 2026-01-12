@@ -24,6 +24,7 @@ import { handleIndex, indexToolDef } from './tools/indexTool.js';
 import { handleLoop, loopToolDef } from './tools/loop.js';
 import { handleTest, testToolDef } from './tools/test.js';
 import { handleConfig, configToolDef } from './tools/config.js';
+import { handleSearch, searchToolDef } from './tools/search.js';
 
 const server = new Server(
   {
@@ -51,6 +52,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       loopToolDef,
       testToolDef,
       configToolDef,
+      searchToolDef,
     ],
   };
 });
@@ -81,6 +83,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return await handleTest(args);
       case 'agento_config':
         return await handleConfig(args);
+      case 'agento_search':
+        return await handleSearch(args);
       default:
         return {
           content: [

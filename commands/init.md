@@ -29,12 +29,14 @@ This rule forces Claude to use AgentO tools for ALL prompts:
 | Read files | `agento_read` |
 | Run commands | `agento_bash` |
 | Run tests | `agento_test` |
+| Search code | `agento_search` |
 
 ## Rules
 
 1. **NEVER** use built-in `Write` tool → use `agento_write`
 2. **NEVER** use built-in `Read` tool → use `agento_read`
 3. **NEVER** use built-in `Bash` tool → use `agento_bash`
+4. **NEVER** use built-in `Grep`/`Glob` tools → use `agento_search`
 ```
 
 ### Step 2: Create `.agenticMemory/` directory with these files:
@@ -75,6 +77,7 @@ The `.claude/rules/agento-tools.md` ensures AgentO tools are used automatically.
 | agento_write | Write files with rule enforcement |
 | agento_read | Read files with tracking |
 | agento_bash | Execute commands safely |
+| agento_search | Smart codebase search with memory integration |
 | agento_rules | Manage project rules |
 | agento_functions | Query function index |
 | agento_index | Index the codebase |
