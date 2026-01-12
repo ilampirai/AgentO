@@ -1,0 +1,10 @@
+{
+  "active": false,
+  "task": "",
+  "completionMarker": "",
+  "maxIterations": 10,
+  "currentIteration": 0,
+  "startedAt": "",
+  "history": []
+}
+

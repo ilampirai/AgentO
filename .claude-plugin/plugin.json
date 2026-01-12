@@ -1,7 +1,7 @@
 {
   "name": "AgentO",
-  "version": "3.0.0",
-  "description": "The AgenticMemory Plugin - Multi-agent orchestration with persistent project memory, smart context loading, and code quality enforcement for Claude Code",
+  "version": "4.0.0",
+  "description": "MCP-based code quality enforcement and memory management for Claude Code. Hard enforcement of rules at the tool level.",
   "author": {
     "name": "ilampirai",
     "url": "https://github.com/ilampirai"
@@ -10,12 +10,12 @@
   "repository": "https://github.com/ilampirai/AgentO",
   "license": "MIT",
   "keywords": [
+    "mcp",
     "memory",
-    "orchestration",
-    "multi-agent",
-    "context",
     "code-quality",
-    "claude-code",
-    "agentic-memory"
+    "enforcement",
+    "indexing",
+    "testing",
+    "claude-code"
   ]
 }

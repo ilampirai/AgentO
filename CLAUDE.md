@@ -1,114 +1,64 @@
-# AgentO Project Rules
+# AgentO v4.0.0 - MCP Edition
 
-**This project uses AgentO orchestrator. ALL prompts route through AgentO.**
+This project uses **AgentO MCP** for automatic code quality enforcement.
 
-## Mandatory Routing
+## How It Works
 
-You are operating as **AgentO** - the orchestrator agent. Every user prompt goes through you.
+AgentO provides MCP tools that enforce rules on **every file operation**:
 
-On EVERY prompt:
-1. Check `.agenticMemory/DISCOVERY.md` - is this area indexed?
-2. If not indexed → run focused index first
-3. Check `.agenticMemory/RULES.md` for project rules
-4. Check `.agenticMemory/ATTEMPTS.md` for blocked patterns
-5. Route to appropriate sub-agent
-6. Update memory after changes
+| Tool | What It Enforces |
+|------|------------------|
+| `agento_write` | Line limits, duplicates, user rules |
+| `agento_read` | Auto-updates discovery & function index |
+| `agento_bash` | Blocks previously failed commands |
+| `agento_test` | Auto-detects framework, runs with retry |
+| `agento_loop` | Iteration until success |
 
-## MANDATORY RULES (NOT OPTIONAL - VIOLATION = STOP)
+## Quick Start
 
-These rules are **NOT suggestions**. They are **hard requirements**.
-If you are about to violate ANY rule, you MUST STOP and fix it first.
+1. Initialize: `/agento:init`
+2. Just prompt normally - enforcement is automatic
 
-### MAX_FILE_LINES: 500 (Auto-Split)
-- **BEFORE writing**: Check if file will exceed 500 lines
-- **IF exceeded**: AUTO-SPLIT immediately (no asking):
-  1. Find a class/function group to extract
-  2. Create new module file
-  3. Move code + add exports
-  4. Add import in original file
-  5. Report: `📦 Auto-split: X.js → Y.js (N lines moved)`
-- **NO EXCEPTIONS**: Never create files over 500 lines
+## Commands
 
-### NO_DUPLICATE_CODE
-- **BEFORE writing**: Check FUNCTIONS.md for similar functions
-- **IF exists**: REUSE existing function
-- **NO EXCEPTIONS**: Never duplicate functionality
+| Command | Purpose |
+|---------|---------|
+| `/agento:init` | Initialize AgentO |
+| `/agento:rules` | Manage rules |
+| `/agento:functions` | Query function index |
+| `/agento:index` | Index codebase |
+| `/agento:loop` | Start fix loop |
+| `/agento:test` | Run tests |
+| `/agento:status` | Show status |
+| `/agento:config` | Configuration |
 
-### UPDATE_MEMORY
-- **AFTER changes**: Update FUNCTIONS.md with new code
-- **AFTER discovery**: Update DISCOVERY.md
-- **ALWAYS**: Keep memory current
+## Memory Files
 
-## Rule Violation = HARD STOP
+All memory is stored in `.agenticMemory/`:
 
-If about to violate ANY rule:
-
-1. **STOP IMMEDIATELY** - Do not proceed with the action
-2. **SHOW VIOLATION** - Display what rule would be broken
-3. **FIX FIRST** - Auto-split, refactor, or resolve
-4. **THEN CONTINUE** - Only after rule is satisfied
-
-```
-⛔ RULE VIOLATION - STOPPING
-
-Rule: MAX_FILE_LINES (500)
-File: src/Game.js  
-Would be: 530 lines (OVER LIMIT)
-
-🤖 AgentO → Splitter | Auto-splitting...
-📦 Created: GameMovement.js (80 lines extracted)
-✓ Game.js now 450 lines
-
-Continuing with original task...
-```
-
-**NO EXCEPTIONS. NO "I'll fix it later". NO ASKING USER TO ALLOW VIOLATION.**
-
-## Output Style
-
-- **ALWAYS show agent line**: `🤖 AgentO → [Agent] | [Task]`
-- Concise (bullets, not paragraphs)
-- 5-min updates on long tasks
-- Full debug output when `/AgentO:debug on`
-
-### Agent Tracking (Required)
-
-On EVERY action, show:
-```
-🤖 AgentO → Coder-TS | Writing Game.js
-```
-
-On delegation chains:
-```
-🤖 AgentO → Coder-TS | Writing Game.js
-   └→ Coder-TS → Splitter | Auto-split (>500 lines)
-```
-
-## Sub-Agents Available
-
-| Agent | Model | Use For |
-|-------|-------|---------|
-| explorer | haiku | Fast read-only codebase search |
-| coder-ts | sonnet | TypeScript/JavaScript |
-| coder-py | sonnet | Python |
-| coder-php | sonnet | PHP |
-| coder-general | sonnet | Other languages |
-| designer | sonnet | UI/UX, CSS |
-| reviewer | sonnet | Code review |
-| debugger | sonnet | Error diagnosis |
-| tester | sonnet | Playwright tests |
-| indexer | haiku | Memory updates |
-| architect | opus | Architecture analysis |
-
-## Memory Location
-
-All memory files in `.agenticMemory/`:
-- `RULES.md` - Project rules
-- `FUNCTIONS.md` - Code index
+- `FUNCTIONS.md` - Function signatures
+- `RULES.md` - User rules
+- `ARCHITECTURE.md` - Project structure
 - `DISCOVERY.md` - Explored areas
 - `ATTEMPTS.md` - Failed actions
 - `ERRORS.md` - Known solutions
+- `VERSIONS.md` - Dependencies
+- `config.json` - Settings
 
----
-*AgentO v3.0.0 - Auto-routing enabled*
+## Default Rules
 
+1. **500-line limit** - Files blocked if too long
+2. **No duplicates** - Warns on similar functions
+3. **User rules** - Add with `/agento:rules add`
+
+## No Special Prefix Needed
+
+After `/agento:init`, just talk normally:
+
+```
+"Build a login page"
+"Fix the auth bug"
+"Run tests until they pass"
+```
+
+AgentO MCP tools enforce everything automatically.

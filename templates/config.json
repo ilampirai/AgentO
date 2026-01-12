@@ -1,0 +1,9 @@
+{
+  "lineLimit": 500,
+  "strictMode": true,
+  "autoIndex": true,
+  "autoMemoryUpdate": true,
+  "testFramework": "auto",
+  "maxLoopIterations": 10
+}
+

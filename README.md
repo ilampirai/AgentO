@@ -1,229 +1,176 @@
-# AgentO
+# AgentO v4.0.0
 
-**Multi-Agent Orchestrator for Claude Code**
+**MCP-based code quality enforcement for Claude Code.**
 
-A powerful plugin that brings intelligent multi-agent orchestration, persistent memory, and UI/UX design capabilities to your Claude Code workflow.
+AgentO provides hard enforcement of code quality rules at the tool level. Unlike soft prompt-based approaches, AgentO's MCP server intercepts all file operations and enforces rules automatically.
 
 ## Features
 
-### Hierarchical Agent System
-
-AgentO provides a top-level orchestrator that manages specialized sub-agents:
-
-| Agent | Purpose |
-|-------|---------|
-| **Orchestrator** | Project-wide understanding, task routing, rule enforcement |
-| **Coder (TS/JS)** | TypeScript and JavaScript development |
-| **Coder (Python)** | Python development with PEP8 compliance |
-| **Coder (PHP)** | PHP development with PSR standards |
-| **Coder (General)** | Go, Rust, Java, C#, Ruby, and more |
-| **Designer** | UI/UX, HTML/CSS/JS, web scraping |
-| **Reviewer** | Code quality and security review |
-| **Debugger** | Error diagnosis and solution documentation |
-| **Tester** | Playwright browser automation and testing |
-| **Indexer** | Background codebase scanning |
-
-### Persistent Memory (Smart Context Loading)
-
-Full project vision WITHOUT repeated scanning:
-
-| File | Purpose |
-|------|---------|
-| **ARCHITECTURE.md** | Project structure |
-| **FUNCTIONS.md** | Functions with L1/L2 dependencies |
-| **DATASTRUCTURE.md** | DB schemas, models, API flows |
-| **ERRORS.md** | Known errors and solutions |
-| **RULES.md** | Project rules all agents follow |
-| **ATTEMPTS.md** | Failed actions (never repeat mistakes) |
-
-### Dependency Levels (Token Efficient)
-
-Load only what you need - no more grep/find spam:
-
-```
-L0: F:login(email,pass):Token                    # Signature only
-L1: F:login(...) [L1:validateUser,hashCompare]   # Direct deps
-L2: F:login(...) [L1:...] [L2:dbQuery,bcrypt]    # Deep deps
-```
-
-### Code Quality Enforcement
-
-Built-in rules that can't be bypassed:
-
-- Maximum 500 lines per file
-- No duplicate code
-- Required error handling
-- Custom rules you define
-
-### Dynamic Agent Routing
-
-Swap agents on the fly:
-
-```
-/AgentO:use coder-rust as coder
-/AgentO:swap reviewer my-custom-reviewer
-```
-
-### Session Persistence
-
-Grant permissions once, keep them across sessions:
-
-```
-/AgentO:session save
-/AgentO:session restore
-```
-
-### Web Scraping & Templates
-
-Build UIs by example:
-
-```
-/AgentO:design scrape https://stripe.com
-/AgentO:design crawl https://example.com
-/AgentO:design style material-design
-```
+- **Hard Enforcement** - Rules enforced at tool level, not suggestions
+- **500-Line Limit** - Blocks writes that exceed line limit
+- **Duplicate Detection** - Warns on similar function signatures
+- **User Rules** - Add custom rules via `/agento:rules`
+- **Auto-Indexing** - Function index updated on every read/write
+- **Test Runner** - Auto-detects Playwright, Jest, pytest, PHPUnit
+- **Fix Loops** - Iterate until tests pass
 
 ## Installation
 
-### From Marketplace
+### Via Claude Code Marketplace
 
 ```
-/plugin install AgentO@ilampirai
+/install agento
 ```
 
-### From GitHub
+### Manual Installation
 
-```bash
-git clone https://github.com/ilampirai/AgentO.git
-```
-
-Then in Claude Code:
-
-```
-claude --plugin-dir ./AgentO
-```
+1. Clone this repository
+2. Build the MCP server:
+   ```bash
+   cd mcp-server
+   npm install
+   npm run build
+   ```
+3. Add to your project's `.mcp.json`:
+   ```json
+   {
+     "mcpServers": {
+       "agento": {
+         "command": "node",
+         "args": ["/path/to/agento/mcp-server/dist/index.js"]
+       }
+     }
+   }
+   ```
 
 ## Quick Start
 
-1. **Initialize AgentO** in your project:
-   ```
-   /AgentO:start
-   ```
+```
+/agento:init
+```
 
-2. **Index your codebase**:
-   ```
-   /AgentO:index
-   ```
+That's it. Now just prompt normally:
 
-3. **Start coding!** The orchestrator will:
-   - Read your memory files for context
-   - Route tasks to the right agents
-   - Enforce code quality rules
-   - Update memory as you work
+```
+"Build a login page"
+"Fix the authentication bug"  
+"Run tests and fix any failures"
+```
+
+AgentO enforces rules automatically on every operation.
 
 ## Commands
 
-### Natural Language (Recommended)
-
-Just describe what you want:
-
-```
-/AgentO fix the login button not working
-/AgentO add a rule that all functions need error handling
-/AgentO create a pricing card component like stripe
-```
-
-### Explicit Commands
-
 | Command | Description |
 |---------|-------------|
-| `/AgentO <request>` | Natural language - just describe what you want |
-| `/AgentO:fix <issue>` | Fix an issue using agents (debugger → coder → reviewer) |
-| `/AgentO:start` | Initialize AgentO in a project |
-| `/AgentO:index` | Scan codebase and update memory |
-| `/AgentO:agents list` | Show available agents |
-| `/AgentO:agents add <name>` | Create custom agent |
-| `/AgentO:use <agent> as <role>` | Route role to agent |
-| `/AgentO:swap <role> <agent>` | Quick swap agent |
-| `/AgentO:rules list` | Show project rules |
-| `/AgentO:rules add <rule>` | Add custom rule |
-| `/AgentO:session status` | View session info |
-| `/AgentO:session save` | Save session state |
-| `/AgentO:design scrape <url>` | Scrape website template |
-| `/AgentO:design crawl <url>` | Crawl entire site |
-| `/AgentO:design style <name>` | Set active style guide |
+| `/agento:init` | Initialize AgentO in project |
+| `/agento:rules` | Manage project rules |
+| `/agento:functions` | Query function index |
+| `/agento:index` | Index the codebase |
+| `/agento:loop` | Start fix iteration loop |
+| `/agento:test` | Run tests with retry |
+| `/agento:status` | Show AgentO status |
+| `/agento:config` | View/edit configuration |
 
-### Fix Command Flow
+## MCP Tools
 
-When you run `/AgentO:fix`, the agents work together:
+| Tool | Purpose |
+|------|---------|
+| `agento_write` | Write file with rule enforcement |
+| `agento_read` | Read file with tracking |
+| `agento_bash` | Execute command safely |
+| `agento_memory` | Direct memory file access |
+| `agento_rules` | CRUD for rules |
+| `agento_functions` | Query function index |
+| `agento_index` | Index codebase |
+| `agento_loop` | Iteration loop control |
+| `agento_test` | Test runner |
+| `agento_config` | Configuration |
 
-```
-You describe the issue
-        ↓
-   Orchestrator (understands & routes)
-        ↓
-   Debugger (diagnoses root cause)
-        ↓
-   Coder (implements fix)
-        ↓
-   Reviewer (validates fix)
-        ↓
-   Documents solution in ERRORS.md
-```
+## Memory Files
 
-## Directory Structure
+AgentO stores all state in `.agenticMemory/`:
 
-```
-.agenticMemory/
-├── agents/           # User-defined agents
-├── templates/        # Scraped design templates
-├── styles/           # Style guides
-├── config.json       # Agent routing + stats
-├── ARCHITECTURE.md   # Project structure
-├── FUNCTIONS.md      # Code index with L1/L2 deps
-├── DATASTRUCTURE.md  # DB schemas, models, API flows
-├── ERRORS.md         # Error solutions
-├── RULES.md          # Project rules
-└── ATTEMPTS.md       # Failed actions log (never retry)
-```
+| File | Purpose |
+|------|---------|
+| `FUNCTIONS.md` | Function signatures & dependencies |
+| `RULES.md` | System & user rules |
+| `ARCHITECTURE.md` | Project structure |
+| `DISCOVERY.md` | Explored areas |
+| `ATTEMPTS.md` | Failed actions (blocked patterns) |
+| `ERRORS.md` | Known errors & solutions |
+| `VERSIONS.md` | Dependency versions |
+| `DATASTRUCTURE.md` | Data models & schemas |
+| `config.json` | Settings |
+| `LOOP_STATE.json` | Active loop state |
 
-## Creating Custom Agents
-
-Add agents to `.agenticMemory/agents/`:
-
-```markdown
----
-description: My custom agent description
-capabilities:
-  - capability 1
-  - capability 2
----
-
-# My Custom Agent
-
-Instructions for the agent...
-```
-
-Then route to it:
+## Configuration
 
 ```
-/AgentO:use my-custom-agent as coder
+/agento:config set lineLimit 400
+/agento:config set strictMode false
+/agento:config set testFramework jest
 ```
 
-## Requirements
+| Setting | Default | Description |
+|---------|---------|-------------|
+| lineLimit | 500 | Max lines per file |
+| strictMode | true | Block vs warn on violations |
+| autoIndex | true | Auto-index on read/write |
+| autoMemoryUpdate | true | Auto-update memory files |
+| testFramework | auto | Test framework |
+| maxLoopIterations | 10 | Default max loop iterations |
 
-- Claude Code CLI installed
-- Node.js 18+ (for Playwright MCP)
-- Playwright (for web scraping features)
+## Adding Rules
+
+```
+/agento:rules add "no console.log" --pattern no-console --action BLOCK
+/agento:rules add "no inline styles" --pattern no-inline-css --files "*.html" --action WARN
+```
+
+Built-in patterns:
+- `no-inline-css` - No `<style>` or `style=""`
+- `no-console` - No `console.log`
+- `no-any` - No TypeScript `any`
+- Custom string - Blocks if content contains it
+
+## Fix Loops
+
+```
+/agento:loop "Fix test failures" --until "All tests passed" --max 5 --test "npm test"
+```
+
+AgentO will:
+1. Run the test command
+2. If marker not found, fix issues
+3. Repeat until success or max iterations
+
+## Architecture
+
+```
+User Prompt
+     ↓
+Claude (Default)
+     ↓
+AgentO MCP Server
+├── agento_write → Checks rules → Updates FUNCTIONS.md
+├── agento_read → Updates DISCOVERY.md
+├── agento_bash → Checks ATTEMPTS.md
+└── agento_test → Auto-detects framework
+     ↓
+Memory Files (.agenticMemory/)
+```
+
+## v3.0.0 → v4.0.0 Migration
+
+If upgrading from v3.0.0:
+
+1. Your `.agenticMemory/` files are preserved
+2. Sub-agents are removed (no longer needed)
+3. Skills are now in MCP tools
+4. Hooks are replaced by MCP enforcement
+5. `/AgentO` prefix is optional (enforcement is automatic)
 
 ## License
 
 MIT
-
-## Author
-
-**ilampirai** - [GitHub](https://github.com/ilampirai)
-
----
-
-Built with the [Claude Agent SDK](https://docs.claude.com/en/api/agent-sdk/overview)

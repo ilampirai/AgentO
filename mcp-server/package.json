@@ -1,0 +1,34 @@
+{
+  "name": "agento-mcp",
+  "version": "4.0.0",
+  "description": "AgentO MCP Server - Hard enforcement for code quality and memory management",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "keywords": [
+    "mcp",
+    "claude",
+    "agento",
+    "code-quality",
+    "memory"
+  ],
+  "author": "ilampirai",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+
