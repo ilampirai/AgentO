@@ -16,8 +16,7 @@ AgentO provides MCP tools that enforce rules on **every file operation**:
 
 ## Quick Start
 
-1. Initialize: `/agento:init`
-2. Just prompt normally - enforcement is automatic
+Run `/agento:init` then just prompt normally — enforcement is automatic.
 
 ## Commands
 

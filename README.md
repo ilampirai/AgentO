@@ -14,9 +14,7 @@ AgentO provides hard enforcement of code quality rules at the tool level. Unlike
 - **Test Runner** - Auto-detects Playwright, Jest, pytest, PHPUnit
 - **Fix Loops** - Iterate until tests pass
 
-## Installation (2 Steps)
-
-### Step 1: Install AgentO Plugin
+## Installation (1 Step)
 
 ```bash
 claude plugin install https://github.com/ilampirai/AgentO
@@ -27,22 +25,7 @@ Or via Claude Code Marketplace:
 /install agento
 ```
 
-### Step 2: Add MCP Server to Your Project
-
-Create `.mcp.json` in your project root:
-
-```json
-{
-  "mcpServers": {
-    "agento": {
-      "command": "npx",
-      "args": ["-y", "@ilam/agento-mcp"]
-    }
-  }
-}
-```
-
-**That's it!** The MCP server downloads automatically when needed (just like `@anthropic/playwright-mcp`).
+**That's it!** The MCP server (`@ilam/agento-mcp`) is auto-registered when you install the plugin — just like Playwright.
 
 ## Quick Start
 

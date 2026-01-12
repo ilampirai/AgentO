@@ -1,6 +1,6 @@
 {
   "name": "AgentO",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "MCP-based code quality enforcement and memory management for Claude Code. Hard enforcement of rules at the tool level.",
   "author": {
     "name": "ilampirai",
@@ -17,5 +17,11 @@
     "indexing",
     "testing",
     "claude-code"
-  ]
+  ],
+  "mcpServers": {
+    "agento": {
+      "command": "npx",
+      "args": ["-y", "@ilam/agento-mcp"]
+    }
+  }
 }

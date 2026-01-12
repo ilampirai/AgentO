@@ -1,10 +1,10 @@
 ---
-description: Initialize AgentO in a project. Auto-creates .mcp.json and .agenticMemory folder.
+description: Initialize AgentO in a project. Creates .agenticMemory folder with all memory files.
 ---
 
 # /agento:init
 
-Initialize AgentO in your project with one command.
+Initialize AgentO in your project.
 
 ## Usage
 
@@ -14,22 +14,7 @@ Initialize AgentO in your project with one command.
 
 ## What To Do
 
-### Step 1: Create/Update `.mcp.json` in project root
-
-```json
-{
-  "mcpServers": {
-    "agento": {
-      "command": "npx",
-      "args": ["-y", "@ilam/agento-mcp"]
-    }
-  }
-}
-```
-
-If `.mcp.json` already exists with other servers, add the `agento` entry to `mcpServers`.
-
-### Step 2: Create `.agenticMemory/` directory with these files:
+Create `.agenticMemory/` directory with these files:
 
 - `FUNCTIONS.md` - Function index
 - `RULES.md` - Project rules  
@@ -44,7 +29,7 @@ If `.mcp.json` already exists with other servers, add the `agento` entry to `mcp
 
 Use template content from the plugin's `templates/` folder.
 
-### Step 3: Confirm initialization
+### Confirm initialization
 
 Reply: "AgentO initialized. MCP server registered."
 
