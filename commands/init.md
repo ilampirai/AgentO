@@ -1,10 +1,10 @@
 ---
-description: Initialize AgentO in a project. Creates .agenticMemory folder with all memory files and registers the MCP server.
+description: Initialize AgentO in a project. Auto-creates .mcp.json and .agenticMemory folder.
 ---
 
 # /agento:init
 
-Initialize AgentO in your project.
+Initialize AgentO in your project with one command.
 
 ## Usage
 
@@ -12,9 +12,9 @@ Initialize AgentO in your project.
 /agento:init
 ```
 
-## Prerequisites
+## What To Do
 
-Add to your project's `.mcp.json`:
+### Step 1: Create/Update `.mcp.json` in project root
 
 ```json
 {
@@ -27,25 +27,30 @@ Add to your project's `.mcp.json`:
 }
 ```
 
-## What It Does
+If `.mcp.json` already exists with other servers, add the `agento` entry to `mcpServers`.
 
-1. Creates `.agenticMemory/` directory
-2. Initializes all memory files:
-   - FUNCTIONS.md - Function index
-   - RULES.md - Project rules
-   - ARCHITECTURE.md - Project structure
-   - DISCOVERY.md - Exploration log
-   - ATTEMPTS.md - Failed actions log
-   - ERRORS.md - Known errors & solutions
-   - VERSIONS.md - Dependency versions
-   - DATASTRUCTURE.md - Data models
-   - config.json - Settings
-   - LOOP_STATE.json - Loop tracking
-3. Registers AgentO MCP server
+### Step 2: Create `.agenticMemory/` directory with these files:
+
+- `FUNCTIONS.md` - Function index
+- `RULES.md` - Project rules  
+- `ARCHITECTURE.md` - Project structure
+- `DISCOVERY.md` - Exploration log
+- `ATTEMPTS.md` - Failed actions log
+- `ERRORS.md` - Known errors & solutions
+- `VERSIONS.md` - Dependency versions
+- `DATASTRUCTURE.md` - Data models
+- `config.json` - Settings
+- `LOOP_STATE.json` - Loop tracking
+
+Use template content from the plugin's `templates/` folder.
+
+### Step 3: Confirm initialization
+
+Reply: "AgentO initialized. MCP server registered."
 
 ## After Init
 
-Just prompt normally. AgentO MCP tools enforce rules automatically.
+Just prompt normally. AgentO MCP tools enforce rules automatically:
 
 ```
 "Build a login page"           # agento_write enforces rules

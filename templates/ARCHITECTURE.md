@@ -48,3 +48,4 @@ Add project-specific constraints:
 
 *Update this file to match your project's actual architecture.*
 
+

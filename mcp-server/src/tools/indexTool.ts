@@ -226,3 +226,4 @@ async function updateArchitecture(files: string[]): Promise<void> {
   await writeMemoryFile(MEMORY_FILES.ARCHITECTURE, content);
 }
 
+

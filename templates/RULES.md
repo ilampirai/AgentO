@@ -40,3 +40,4 @@ Available patterns:
 - `no-any` - No TypeScript `any` type
 - Custom string - Blocks if content contains the string
 
+
