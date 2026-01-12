@@ -2,7 +2,7 @@
   "mcpServers": {
     "agento": {
       "command": "npx",
-      "args": ["-y", "@ilampirai/agento-mcp"]
+      "args": ["-y", "@ilam/agento-mcp"]
     }
   }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@ilampirai/agento-mcp",
+  "name": "@ilam/agento-mcp",
   "version": "4.0.0",
   "description": "AgentO MCP Server - Hard enforcement for code quality and memory management in Claude Code",
   "type": "module",

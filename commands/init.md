@@ -21,7 +21,7 @@ Add to your project's `.mcp.json`:
   "mcpServers": {
     "agento": {
       "command": "npx",
-      "args": ["-y", "@ilampirai/agento-mcp"]
+      "args": ["-y", "@ilam/agento-mcp"]
     }
   }
 }

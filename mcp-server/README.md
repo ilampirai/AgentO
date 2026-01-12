@@ -1,4 +1,4 @@
-# @ilampirai/agento-mcp
+# @ilam/agento-mcp
 
 MCP server for AgentO - Hard enforcement of code quality rules in Claude Code.
 
@@ -11,7 +11,7 @@ Add to your project's `.mcp.json`:
   "mcpServers": {
     "agento": {
       "command": "npx",
-      "args": ["-y", "@ilampirai/agento-mcp"]
+      "args": ["-y", "@ilam/agento-mcp"]
     }
   }
 }

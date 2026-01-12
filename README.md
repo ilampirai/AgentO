@@ -32,7 +32,7 @@ Add to your project's `.mcp.json`:
   "mcpServers": {
     "agento": {
       "command": "npx",
-      "args": ["-y", "@ilampirai/agento-mcp"]
+      "args": ["-y", "@ilam/agento-mcp"]
     }
   }
 }
@@ -43,7 +43,7 @@ That's it! The MCP server is downloaded automatically when needed (like Playwrig
 ### Alternative: Global Install
 
 ```bash
-npm install -g @ilampirai/agento-mcp
+npm install -g @ilam/agento-mcp
 ```
 
 ```json
