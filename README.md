@@ -1,4 +1,4 @@
-# AgentO v4.0.0
+# AgentO v4.0.2
 
 **MCP-based code quality enforcement for Claude Code.**
 
@@ -7,6 +7,7 @@ AgentO provides hard enforcement of code quality rules at the tool level. Unlike
 ## Features
 
 - **Hard Enforcement** - Rules enforced at tool level, not suggestions
+- **Auto Tool Routing** - `.claude/rules/` ensures AgentO tools are always used
 - **500-Line Limit** - Blocks writes that exceed line limit
 - **Duplicate Detection** - Warns on similar function signatures
 - **User Rules** - Add custom rules via `/agento:rules`
@@ -14,18 +15,13 @@ AgentO provides hard enforcement of code quality rules at the tool level. Unlike
 - **Test Runner** - Auto-detects Playwright, Jest, pytest, PHPUnit
 - **Fix Loops** - Iterate until tests pass
 
-## Installation (1 Step)
+## Installation
 
 ```bash
-claude plugin install https://github.com/ilampirai/AgentO
+claude plugin install "path/to/AgentO"
 ```
 
-Or via Claude Code Marketplace:
-```
-/install agento
-```
-
-**That's it!** The MCP server (`@ilam/agento-mcp`) is auto-registered when you install the plugin — just like Playwright.
+**That's it!** The MCP server (`@ilam/agento-mcp`) is auto-registered.
 
 ## Quick Start
 
@@ -33,7 +29,11 @@ Or via Claude Code Marketplace:
 /agento:init
 ```
 
-Then just prompt normally:
+This creates:
+- `.claude/rules/agento-tools.md` - Forces AgentO tool usage
+- `.agenticMemory/` - Memory files
+
+Then just prompt normally (no prefix needed):
 
 ```
 "Build a login page"
@@ -41,7 +41,7 @@ Then just prompt normally:
 "Run tests and fix any failures"
 ```
 
-AgentO enforces rules automatically on every operation.
+The `.claude/rules/` file ensures AgentO tools are used for ALL prompts automatically.
 
 ## Commands
 

@@ -1,5 +1,5 @@
 ---
-description: Initialize AgentO in a project. Creates .agenticMemory folder with all memory files.
+description: Initialize AgentO in a project. Creates .agenticMemory folder and .claude/rules for tool enforcement.
 ---
 
 # /agento:init
@@ -14,7 +14,30 @@ Initialize AgentO in your project.
 
 ## What To Do
 
-Create `.agenticMemory/` directory with these files:
+### Step 1: Create `.claude/rules/agento-tools.md`
+
+This rule forces Claude to use AgentO tools for ALL prompts:
+
+```markdown
+# AgentO Tools (Mandatory)
+
+**ALWAYS use AgentO MCP tools for file operations:**
+
+| Operation | Required Tool |
+|-----------|---------------|
+| Write files | `agento_write` |
+| Read files | `agento_read` |
+| Run commands | `agento_bash` |
+| Run tests | `agento_test` |
+
+## Rules
+
+1. **NEVER** use built-in `Write` tool → use `agento_write`
+2. **NEVER** use built-in `Read` tool → use `agento_read`
+3. **NEVER** use built-in `Bash` tool → use `agento_bash`
+```
+
+### Step 2: Create `.agenticMemory/` directory with these files:
 
 - `FUNCTIONS.md` - Function index
 - `RULES.md` - Project rules  
@@ -29,19 +52,21 @@ Create `.agenticMemory/` directory with these files:
 
 Use template content from the plugin's `templates/` folder.
 
-### Confirm initialization
+### Step 3: Confirm initialization
 
-Reply: "AgentO initialized. MCP server registered."
+Reply: "✅ AgentO initialized. Tool enforcement rule active."
 
 ## After Init
 
-Just prompt normally. AgentO MCP tools enforce rules automatically:
+Just prompt normally — no `/agento` prefix needed:
 
 ```
 "Build a login page"           # agento_write enforces rules
 "Fix the auth bug"             # agento_read tracks discovery
 "Run tests and fix failures"   # agento_test runs with retry
 ```
+
+The `.claude/rules/agento-tools.md` ensures AgentO tools are used automatically.
 
 ## MCP Tools Available
 
