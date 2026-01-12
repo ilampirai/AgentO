@@ -1,6 +1,6 @@
 {
   "name": "AgentO",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "MCP-based code quality enforcement and memory management for Claude Code. Hard enforcement of rules at the tool level.",
   "author": {
     "name": "ilampirai",
