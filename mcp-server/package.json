@@ -1,6 +1,6 @@
 {
   "name": "@ilam/agento-mcp",
-  "version": "4.1.0",
+  "version": "4.1.1",
   "description": "AgentO MCP Server - Hard enforcement for code quality and memory management in Claude Code",
   "type": "module",
   "main": "dist/index.js",
