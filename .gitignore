@@ -18,3 +18,7 @@ Thumbs.db
 update-*.md
 notes/
 *.local.md
+
+# Claude Code temporary files
+tmpclaude-*
+.claude/settings.local.json
