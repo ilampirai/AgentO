@@ -4,6 +4,10 @@
 
 AgentO provides hard enforcement of code quality rules at the tool level. Unlike soft prompt-based approaches, AgentO's MCP server intercepts all file operations and enforces rules automatically.
 
+## Dependency
+
+- **MCP Server:** [`@ilam/agento-mcp`](https://www.npmjs.com/package/@ilam/agento-mcp) (auto-installed with plugin)
+
 ## Features
 
 - **Hard Enforcement** - Rules enforced at tool level, not suggestions

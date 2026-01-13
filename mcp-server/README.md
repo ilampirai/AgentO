@@ -1,10 +1,12 @@
 # @ilam/agento-mcp
 
-MCP server for AgentO - Hard enforcement of code quality rules in Claude Code.
+**MCP server for the [AgentO Claude Code plugin](https://github.com/ilampirai/AgentO).** This package is automatically registered when you install the AgentO plugin — no manual configuration needed. See the [GitHub repository](https://github.com/ilampirai/AgentO) for full documentation and installation instructions.
 
 ## Quick Start
 
-Add to your project's `.mcp.json`:
+**For most users:** Install the [AgentO plugin](https://github.com/ilampirai/AgentO) — this MCP server is included automatically.
+
+**Manual setup:** Add to your project's `.mcp.json`:
 
 ```json
 {
