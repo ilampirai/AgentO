@@ -25,11 +25,31 @@ AgentO provides hard enforcement of code quality rules at the tool level. Unlike
 
 ## Installation
 
+### From Marketplace (Recommended)
+
 ```bash
-claude plugin install "path/to/AgentO"
+claude plugin marketplace add ilampirai/AgentO
+claude plugin install AgentO
 ```
 
 **That's it!** The MCP server (`@ilam/agento-mcp`) is auto-registered.
+
+### Local Installation
+
+If you prefer to clone the repository locally:
+
+```bash
+git clone https://github.com/ilampirai/AgentO.git
+claude plugin install "path/to/AgentO"
+```
+
+To update a local installation:
+
+```bash
+cd path/to/AgentO
+git pull
+claude plugin install "path/to/AgentO"
+```
 
 ## Quick Start
 
