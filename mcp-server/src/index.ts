@@ -25,11 +25,14 @@ import { handleLoop, loopToolDef } from './tools/loop.js';
 import { handleTest, testToolDef } from './tools/test.js';
 import { handleConfig, configToolDef } from './tools/config.js';
 import { handleSearch, searchToolDef } from './tools/search.js';
+import { handleFlow, flowToolDef } from './tools/flow.js';
+import { handleSymbol, symbolToolDef } from './tools/symbol.js';
+import { handleEntryPoints, entrypointsToolDef } from './tools/entrypoints.js';
 
 const server = new Server(
   {
     name: 'agento-mcp',
-    version: '4.0.0',
+    version: '5.0.0',
   },
   {
     capabilities: {
@@ -53,6 +56,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       testToolDef,
       configToolDef,
       searchToolDef,
+      flowToolDef,
+      symbolToolDef,
+      entrypointsToolDef,
     ],
   };
 });
@@ -85,6 +91,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return await handleConfig(args);
       case 'agento_search':
         return await handleSearch(args);
+      case 'agento_flow':
+        return await handleFlow(args);
+      case 'agento_symbol':
+        return await handleSymbol(args);
+      case 'agento_entrypoints':
+        return await handleEntryPoints(args);
       default:
         return {
           content: [
@@ -121,5 +133,6 @@ main().catch((error) => {
   console.error('Fatal error:', error);
   process.exit(1);
 });
+
 
 
