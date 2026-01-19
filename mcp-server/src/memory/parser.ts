@@ -3,7 +3,7 @@
  * Parse markdown formats into structured data
  */
 
-import type { FunctionEntry, RuleEntry, AttemptEntry, ArchitecturePattern } from '../types.js';
+import type { FunctionEntry, RuleEntry, AttemptEntry, ArchitecturePattern, ClassEntry, MethodEntry } from '../types.js';
 
 /**
  * Parse FUNCTIONS.md into structured entries
@@ -232,6 +232,112 @@ export function extractFunctionsFromCode(code: string, filepath: string): Functi
 }
 
 /**
+ * Extract classes and methods from source code
+ */
+export function extractClassesFromCode(code: string, filepath: string): ClassEntry[] {
+  const entries: ClassEntry[] = [];
+  const lines = code.split('\n');
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    const jsClassMatch = line.match(/\bclass\s+(\w+)(?:\s+extends\s+(\w+))?(?:\s+implements\s+([^{]+))?/);
+    if (jsClassMatch) {
+      const className = jsClassMatch[1];
+      const extendsName = jsClassMatch[2];
+      const implementsList = jsClassMatch[3]
+        ? jsClassMatch[3].split(',').map(item => item.trim()).filter(Boolean)
+        : [];
+      const methodEntries: MethodEntry[] = [];
+
+      let braceDepth = 0;
+      let started = false;
+      let endLine = lines.length - 1;
+
+      for (let j = i; j < lines.length; j++) {
+        const current = lines[j];
+        for (const char of current) {
+          if (char === '{') {
+            braceDepth++;
+            started = true;
+          } else if (char === '}') {
+            braceDepth--;
+          }
+        }
+        if (started && braceDepth === 0) {
+          endLine = j;
+          break;
+        }
+      }
+
+      for (let j = i + 1; j <= endLine; j++) {
+        const methodLine = lines[j];
+        const methodMatch = methodLine.match(
+          /^\s*(?:public|private|protected)?\s*(?:static\s+)?(?:async\s+)?(\w+)\s*\(([^)]*)\)(?:\s*:\s*([^\s{]+))?\s*\{/
+        );
+        if (methodMatch) {
+          methodEntries.push({
+            name: methodMatch[1],
+            line: j + 1,
+            params: methodMatch[2]?.trim() || '',
+            returnType: methodMatch[3]?.trim() || 'void',
+          });
+        }
+      }
+
+      entries.push({
+        name: className,
+        file: filepath,
+        line: i + 1,
+        extends: extendsName,
+        implements: implementsList,
+        methods: methodEntries,
+      });
+
+      i = endLine;
+      continue;
+    }
+
+    const pyClassMatch = line.match(/^(\s*)class\s+(\w+)(?:\(([^)]*)\))?:/);
+    if (pyClassMatch) {
+      const classIndent = pyClassMatch[1].length;
+      const className = pyClassMatch[2];
+      const baseClass = pyClassMatch[3]?.split(',')[0]?.trim();
+      const methodEntries: MethodEntry[] = [];
+
+      for (let j = i + 1; j < lines.length; j++) {
+        const nextLine = lines[j];
+        if (!nextLine.trim()) continue;
+        const indent = nextLine.match(/^(\s*)/)?.[1].length || 0;
+        if (indent <= classIndent) {
+          break;
+        }
+        const defMatch = nextLine.match(/^\s*def\s+(\w+)\s*\(([^)]*)\)(?:\s*->\s*(\S+))?:/);
+        if (defMatch) {
+          methodEntries.push({
+            name: defMatch[1],
+            line: j + 1,
+            params: defMatch[2]?.trim() || '',
+            returnType: defMatch[3]?.trim() || 'void',
+          });
+        }
+      }
+
+      entries.push({
+        name: className,
+        file: filepath,
+        line: i + 1,
+        extends: baseClass,
+        implements: [],
+        methods: methodEntries,
+      });
+    }
+  }
+
+  return entries;
+}
+
+/**
  * Check for similar function signatures (duplicate detection)
  */
 export function findSimilarFunctions(
@@ -255,5 +361,96 @@ export function findSimilarFunctions(
     return false;
   });
 }
+
+/**
+ * Extract function calls from code
+ * Returns map of function name -> array of called function names
+ */
+export function extractCallGraph(
+  code: string,
+  functions: FunctionEntry[],
+  classes: ClassEntry[]
+): Map<string, string[]> {
+  const callMap = new Map<string, string[]>();
+  const lines = code.split('\n');
+  
+  // Build lookup maps
+  const funcNames = new Set(functions.map(f => f.name));
+  const classNames = new Set(classes.map(c => c.name));
+  const methodNames = new Set<string>();
+  for (const cls of classes) {
+    for (const method of cls.methods) {
+      methodNames.add(`${cls.name}.${method.name}`);
+      methodNames.add(method.name);
+    }
+  }
+  
+  // Track current function/class context
+  let currentFunction: string | null = null;
+  let currentClass: string | null = null;
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // Detect function start
+    const funcMatch = line.match(/(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*\(/);
+    if (funcMatch) {
+      currentFunction = funcMatch[1];
+      callMap.set(currentFunction, []);
+      continue;
+    }
+    
+    const arrowFuncMatch = line.match(/(?:export\s+)?const\s+(\w+)\s*=\s*(?:async\s+)?\(/);
+    if (arrowFuncMatch) {
+      currentFunction = arrowFuncMatch[1];
+      callMap.set(currentFunction, []);
+      continue;
+    }
+    
+    // Detect class start
+    const classMatch = line.match(/\bclass\s+(\w+)/);
+    if (classMatch) {
+      currentClass = classMatch[1];
+      continue;
+    }
+    
+    // Detect method start
+    const methodMatch = line.match(/(?:public|private|protected)?\s*(?:static\s+)?(?:async\s+)?(\w+)\s*\(/);
+    if (methodMatch && currentClass) {
+      currentFunction = `${currentClass}.${methodMatch[1]}`;
+      callMap.set(currentFunction, []);
+      continue;
+    }
+    
+    // Extract function calls
+    if (currentFunction) {
+      // Match function calls: name(...) or obj.name(...) or this.name(...)
+      const callPatterns = [
+        /\b(\w+)\s*\(/g,  // direct call
+        /\.(\w+)\s*\(/g,  // method call
+        /this\.(\w+)\s*\(/g,  // this method
+      ];
+      
+      for (const pattern of callPatterns) {
+        let match;
+        while ((match = pattern.exec(line)) !== null) {
+          const calledName = match[1];
+          
+          // Check if it's a known function/method
+          if (funcNames.has(calledName) || methodNames.has(calledName)) {
+            const existing = callMap.get(currentFunction) || [];
+            if (!existing.includes(calledName)) {
+              existing.push(calledName);
+              callMap.set(currentFunction, existing);
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  return callMap;
+}
+
 
 
