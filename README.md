@@ -1,8 +1,8 @@
-# AgentO v4.0.2
+# AgentO v5.0.0
 
-**MCP-based code quality enforcement for Claude Code.**
+**MCP-based code quality enforcement and intelligent code understanding for Claude Code.**
 
-AgentO provides hard enforcement of code quality rules at the tool level. Unlike soft prompt-based approaches, AgentO's MCP server intercepts all file operations and enforces rules automatically.
+AgentO provides hard enforcement of code quality rules at the tool level. Unlike soft prompt-based approaches, AgentO's MCP server intercepts all file operations and enforces rules automatically. **v5.0 adds flow graph tools for efficient code understanding with 90% token savings.**
 
 ## Dependency
 
@@ -18,6 +18,10 @@ AgentO provides hard enforcement of code quality rules at the tool level. Unlike
 - **Auto-Indexing** - Function index updated on every read/write
 - **Test Runner** - Auto-detects Playwright, Jest, pytest, PHPUnit
 - **Fix Loops** - Iterate until tests pass
+- **🆕 Flow Graph Tools (v5.0)** - Efficient code understanding with 90% token savings
+  - `agento_entrypoints` - Find entry points for features
+  - `agento_flow` - Get call graph subgraphs
+  - `agento_symbol` - Lookup function/class details
 
 ## Installation
 
@@ -54,11 +58,12 @@ The `.claude/rules/` file ensures AgentO tools are used for ALL prompts automati
 | `/agento:init` | Initialize AgentO in project |
 | `/agento:rules` | Manage project rules |
 | `/agento:functions` | Query function index |
-| `/agento:index` | Index the codebase |
+| `/agento:index` | Index the codebase (generates flow graph) |
 | `/agento:loop` | Start fix iteration loop |
 | `/agento:test` | Run tests with retry |
 | `/agento:status` | Show AgentO status |
 | `/agento:config` | View/edit configuration |
+| `/agento:flow` | Use flow graph tools (see commands/flow.md) |
 
 ## MCP Tools
 
@@ -71,10 +76,13 @@ The `.claude/rules/` file ensures AgentO tools are used for ALL prompts automati
 | `agento_memory` | Direct memory file access |
 | `agento_rules` | CRUD for rules |
 | `agento_functions` | Query function index |
-| `agento_index` | Index codebase |
+| `agento_index` | Index codebase (generates PROJECT_MAP.md & FLOW_GRAPH.json) |
 | `agento_loop` | Iteration loop control |
 | `agento_test` | Test runner |
 | `agento_config` | Configuration |
+| `agento_entrypoints` | Find entry points for features (e.g., "auth", "cart") |
+| `agento_flow` | Get call graph subgraph for specific functions |
+| `agento_symbol` | Lookup function/class details by name or ID |
 
 ## Memory Files
 
@@ -83,6 +91,8 @@ AgentO stores all state in `.agenticMemory/`:
 | File | Purpose |
 |------|---------|
 | `FUNCTIONS.md` | Function signatures & dependencies |
+| `PROJECT_MAP.md` | Unified project structure (v5.0) |
+| `FLOW_GRAPH.json` | Full call graph with IDs (v5.0) |
 | `RULES.md` | System & user rules |
 | `ARCHITECTURE.md` | Project structure |
 | `DISCOVERY.md` | Explored areas |
@@ -151,9 +161,37 @@ AgentO MCP Server
 Memory Files (.agenticMemory/)
 ```
 
-## v3.0.0 → v4.0.0 Migration
+## v5.0.0 - Flow Graph Tools
 
-If upgrading from v3.0.0:
+**New in v5.0:** Efficient code understanding with flow graph tools.
+
+### Workflow Example
+
+```
+User: "Add authentication"
+
+1. agento_entrypoints {query: "auth"} → Get entry point IDs
+2. agento_flow {ids: [...], depth: 2} → Get call graph (500 tokens)
+3. agento_symbol {ids: [...]} → Get function details
+4. agento_read {path: "..."} → Read only needed files
+```
+
+**Benefits:**
+- 90% token savings vs reading entire codebase
+- Clear understanding of code relationships
+- Fast navigation without file scanning
+
+See `commands/flow.md` for detailed usage.
+
+## Migration
+
+### v4.0 → v5.0
+
+1. Run `/agento:index` to generate `PROJECT_MAP.md` and `FLOW_GRAPH.json`
+2. Use flow graph tools for code understanding (see `commands/flow.md`)
+3. All existing memory files are preserved
+
+### v3.0 → v4.0
 
 1. Your `.agenticMemory/` files are preserved
 2. Sub-agents are removed (no longer needed)
