@@ -11,6 +11,8 @@ export const MEMORY_FILES = {
     ERRORS: '.agenticMemory/ERRORS.md',
     VERSIONS: '.agenticMemory/VERSIONS.md',
     DATASTRUCTURE: '.agenticMemory/DATASTRUCTURE.md',
+    PROJECT_MAP: '.agenticMemory/PROJECT_MAP.md',
+    FLOW_GRAPH: '.agenticMemory/FLOW_GRAPH.json',
     LOOP_STATE: '.agenticMemory/LOOP_STATE.json',
     CONFIG: '.agenticMemory/config.json',
 };

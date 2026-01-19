@@ -9,6 +9,20 @@ export interface FunctionEntry {
     returnType: string;
     dependencies: string[];
 }
+export interface MethodEntry {
+    name: string;
+    line?: number;
+    params: string;
+    returnType: string;
+}
+export interface ClassEntry {
+    name: string;
+    file: string;
+    line?: number;
+    extends?: string;
+    implements?: string[];
+    methods: MethodEntry[];
+}
 export interface RuleEntry {
     id: string;
     description: string;
@@ -49,6 +63,26 @@ export interface LoopIteration {
     completed: boolean;
     timestamp: string;
 }
+export interface SymbolNode {
+    id: string;
+    name: string;
+    kind: 'function' | 'method' | 'class';
+    file: string;
+    line?: number;
+    signature?: string;
+}
+export interface FlowEdge {
+    from: string;
+    to: string;
+    type: 'call' | 'import' | 'extend' | 'implement';
+}
+export interface FlowGraph {
+    version: string;
+    generated: string;
+    nodes: Record<string, SymbolNode>;
+    edges: FlowEdge[];
+    entryPoints: string[];
+}
 export interface WriteInput {
     path: string;
     content: string;
@@ -78,6 +112,25 @@ export interface FunctionsInput {
     file?: string;
     checkDuplicates?: boolean;
     code?: string;
+}
+export interface FlowInput {
+    ids: string[];
+    depth?: number;
+    direction?: 'in' | 'out' | 'both';
+    maxNodes?: number;
+    maxEdges?: number;
+    includeUnresolved?: boolean;
+}
+export interface SymbolInput {
+    ids?: string[];
+    name?: string;
+    file?: string;
+    kind?: 'function' | 'method' | 'class';
+    limit?: number;
+}
+export interface EntryPointsInput {
+    query: string;
+    kind?: 'route' | 'handler' | 'command' | 'all';
 }
 export interface IndexInput {
     path?: string;
@@ -132,6 +185,8 @@ export declare const MEMORY_FILES: {
     readonly ERRORS: ".agenticMemory/ERRORS.md";
     readonly VERSIONS: ".agenticMemory/VERSIONS.md";
     readonly DATASTRUCTURE: ".agenticMemory/DATASTRUCTURE.md";
+    readonly PROJECT_MAP: ".agenticMemory/PROJECT_MAP.md";
+    readonly FLOW_GRAPH: ".agenticMemory/FLOW_GRAPH.json";
     readonly LOOP_STATE: ".agenticMemory/LOOP_STATE.json";
     readonly CONFIG: ".agenticMemory/config.json";
 };

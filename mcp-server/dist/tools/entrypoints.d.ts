@@ -1,36 +1,37 @@
 /**
- * agento_index - Enhanced Codebase indexing with flow graph
- * Scans and indexes functions, classes, and builds call graph
+ * agento_entrypoints - Entry point resolution
+ * Maps user queries to relevant entry points and returns their flow
  */
-export declare const indexToolDef: {
+export declare const entrypointsToolDef: {
     name: string;
     description: string;
     inputSchema: {
         type: "object";
         properties: {
-            path: {
+            query: {
                 type: string;
                 description: string;
             };
-            force: {
+            kind: {
                 type: string;
+                enum: string[];
                 description: string;
             };
         };
-        required: never[];
+        required: string[];
     };
 };
-export declare function handleIndex(args: unknown): Promise<{
-    content: {
-        type: string;
-        text: string;
-    }[];
-    isError?: undefined;
-} | {
+export declare function handleEntryPoints(args: unknown): Promise<{
     content: {
         type: string;
         text: string;
     }[];
     isError: boolean;
+} | {
+    content: {
+        type: string;
+        text: string;
+    }[];
+    isError?: undefined;
 }>;
-//# sourceMappingURL=indexTool.d.ts.map
+//# sourceMappingURL=entrypoints.d.ts.map

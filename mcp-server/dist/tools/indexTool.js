@@ -1,15 +1,16 @@
 /**
- * agento_index - Codebase indexing
- * Scan and index all functions in the codebase
+ * agento_index - Enhanced Codebase indexing with flow graph
+ * Scans and indexes functions, classes, and builds call graph
  */
 import { memoryCache } from '../memory/cache.js';
-import { listFilesRecursive, readProjectFile, readMemoryFile, writeMemoryFile } from '../memory/loader.js';
-import { extractFunctionsFromCode, formatFunctionEntry } from '../memory/parser.js';
+import { listFilesRecursive, readProjectFile, readMemoryFile, writeMemoryFile, writeJsonMemoryFile } from '../memory/loader.js';
+import { extractFunctionsFromCode, extractClassesFromCode, extractCallGraph, formatFunctionEntry } from '../memory/parser.js';
 import { MEMORY_FILES } from '../types.js';
 import * as path from 'path';
+import * as crypto from 'crypto';
 export const indexToolDef = {
     name: 'agento_index',
-    description: 'Index the codebase. Scans files for functions and updates FUNCTIONS.md, DISCOVERY.md, and ARCHITECTURE.md.',
+    description: 'Index the codebase. Scans files for functions, classes, and builds flow graph. Updates FUNCTIONS.md, PROJECT_MAP.md, FLOW_GRAPH.json, DISCOVERY.md, and ARCHITECTURE.md.',
     inputSchema: {
         type: 'object',
         properties: {
@@ -26,6 +27,30 @@ export const indexToolDef = {
     },
 };
 const CODE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.py', '.php', '.go', '.rs', '.java'];
+const ENTRY_POINT_PATTERNS = [
+    /server\.ts$/i,
+    /main\.ts$/i,
+    /index\.ts$/i,
+    /app\.ts$/i,
+    /cli\.ts$/i,
+    /start\.ts$/i,
+    /entry\.ts$/i,
+    /server\.js$/i,
+    /main\.js$/i,
+    /index\.js$/i,
+    /app\.js$/i,
+    /cli\.js$/i,
+    /start\.js$/i,
+    /entry\.js$/i,
+];
+// Generate unique ID for symbol
+function generateSymbolId(name, kind, file) {
+    const hash = crypto.createHash('md5')
+        .update(`${kind}:${name}:${file}`)
+        .digest('hex')
+        .substring(0, 8);
+    return `${kind[0].toUpperCase()}${hash}`;
+}
 export async function handleIndex(args) {
     const input = args;
     const { path: indexPath = '.', force = false } = input;
@@ -34,15 +59,27 @@ export async function handleIndex(args) {
         const stats = {
             filesScanned: 0,
             functionsFound: 0,
+            classesFound: 0,
+            edgesFound: 0,
             directoriesExplored: new Set(),
         };
-        // Get existing functions if not forcing
+        // Get existing data if not forcing
         const existingFunctions = force ? [] : await memoryCache.getFunctions();
         const existingFiles = new Set(existingFunctions.map(f => f.file));
         // Find all code files
         const files = await listFilesRecursive(indexPath, CODE_EXTENSIONS);
         const allFunctions = force ? [] : [...existingFunctions];
+        const allClasses = [];
+        const callGraphMap = new Map();
+        const entryPoints = [];
         const newFiles = [];
+        // Detect entry points
+        for (const filepath of files) {
+            if (ENTRY_POINT_PATTERNS.some(pattern => pattern.test(filepath))) {
+                entryPoints.push(filepath);
+            }
+        }
+        // Process each file
         for (const filepath of files) {
             // Skip if already indexed and not forcing
             if (!force && existingFiles.has(filepath)) {
@@ -50,6 +87,7 @@ export async function handleIndex(args) {
             }
             try {
                 const content = await readProjectFile(filepath);
+                // Extract functions
                 const functions = extractFunctionsFromCode(content, filepath);
                 if (functions.length > 0) {
                     // Remove old entries for this file if forcing
@@ -63,6 +101,21 @@ export async function handleIndex(args) {
                     stats.functionsFound += functions.length;
                     newFiles.push(filepath);
                 }
+                // Extract classes
+                const classes = extractClassesFromCode(content, filepath);
+                if (classes.length > 0) {
+                    allClasses.push(...classes);
+                    stats.classesFound += classes.length;
+                    if (!newFiles.includes(filepath)) {
+                        newFiles.push(filepath);
+                    }
+                }
+                // Extract call graph for this file
+                const fileCallGraph = extractCallGraph(content, functions, classes);
+                for (const [caller, callees] of fileCallGraph.entries()) {
+                    callGraphMap.set(caller, callees);
+                    stats.edgesFound += callees.length;
+                }
                 stats.filesScanned++;
                 stats.directoriesExplored.add(path.dirname(filepath));
             }
@@ -70,9 +123,13 @@ export async function handleIndex(args) {
                 // Skip unreadable files
             }
         }
-        // Update FUNCTIONS.md
+        // Build flow graph with IDs
+        const flowGraph = await buildFlowGraph(allFunctions, allClasses, callGraphMap, entryPoints);
+        // Update all memory files
         if (newFiles.length > 0 || force) {
             await rebuildFunctionsFile(allFunctions);
+            await buildProjectMap(allFunctions, allClasses, entryPoints);
+            await writeJsonMemoryFile(MEMORY_FILES.FLOW_GRAPH, flowGraph);
             memoryCache.invalidateFunctions();
         }
         // Update DISCOVERY.md
@@ -84,6 +141,9 @@ export async function handleIndex(args) {
         output += `📊 **Stats**\n`;
         output += `- Files scanned: ${stats.filesScanned}\n`;
         output += `- Functions indexed: ${stats.functionsFound}\n`;
+        output += `- Classes indexed: ${stats.classesFound}\n`;
+        output += `- Call graph edges: ${stats.edgesFound}\n`;
+        output += `- Entry points: ${entryPoints.length}\n`;
         output += `- Directories explored: ${stats.directoriesExplored.size}\n`;
         output += `- Total functions in index: ${allFunctions.length}\n\n`;
         if (newFiles.length > 0) {
@@ -106,6 +166,152 @@ export async function handleIndex(args) {
             isError: true,
         };
     }
+}
+async function buildFlowGraph(functions, classes, callGraph, entryPoints) {
+    const nodes = {};
+    const edges = [];
+    const entryPointIds = [];
+    // Build function nodes
+    for (const func of functions) {
+        const id = generateSymbolId(func.name, 'function', func.file);
+        nodes[id] = {
+            id,
+            name: func.name,
+            kind: 'function',
+            file: func.file,
+            line: func.line,
+            signature: `${func.name}(${func.params}): ${func.returnType}`,
+        };
+        // Check if it's an entry point
+        if (entryPoints.includes(func.file) &&
+            (func.name === 'main' || func.name === 'start' || func.name === 'startServer' ||
+                func.name.includes('Handler') || func.name.includes('Route'))) {
+            entryPointIds.push(id);
+        }
+    }
+    // Build class nodes
+    for (const cls of classes) {
+        const classId = generateSymbolId(cls.name, 'class', cls.file);
+        nodes[classId] = {
+            id: classId,
+            name: cls.name,
+            kind: 'class',
+            file: cls.file,
+            line: cls.line,
+            signature: cls.extends ? `${cls.name} extends ${cls.extends}` : cls.name,
+        };
+        // Build method nodes
+        for (const method of cls.methods) {
+            const methodId = generateSymbolId(`${cls.name}.${method.name}`, 'method', cls.file);
+            nodes[methodId] = {
+                id: methodId,
+                name: `${cls.name}.${method.name}`,
+                kind: 'method',
+                file: cls.file,
+                line: method.line,
+                signature: `${method.name}(${method.params}): ${method.returnType}`,
+            };
+            // Add class -> method edge
+            edges.push({
+                from: classId,
+                to: methodId,
+                type: 'call',
+            });
+        }
+        // Add inheritance edges
+        if (cls.extends) {
+            const extendsId = Object.values(nodes).find(n => n.name === cls.extends && n.kind === 'class')?.id;
+            if (extendsId) {
+                edges.push({
+                    from: classId,
+                    to: extendsId,
+                    type: 'extend',
+                });
+            }
+        }
+    }
+    // Build call graph edges
+    for (const [caller, callees] of callGraph.entries()) {
+        const callerId = Object.values(nodes).find(n => n.name === caller || n.name.endsWith(`.${caller}`))?.id;
+        if (!callerId)
+            continue;
+        for (const callee of callees) {
+            const calleeId = Object.values(nodes).find(n => n.name === callee || n.name.endsWith(`.${callee}`) || n.name === `${caller.split('.')[0]}.${callee}`)?.id;
+            if (calleeId) {
+                edges.push({
+                    from: callerId,
+                    to: calleeId,
+                    type: 'call',
+                });
+            }
+        }
+    }
+    return {
+        version: '1.0',
+        generated: new Date().toISOString(),
+        nodes,
+        edges,
+        entryPoints: entryPointIds,
+    };
+}
+async function buildProjectMap(functions, classes, entryPoints) {
+    let content = '# Project Map\n\n';
+    content += 'Auto-generated unified structure for LLM understanding.\n\n';
+    // Entry points
+    content += '## Entry Points\n\n';
+    for (const ep of entryPoints) {
+        content += `- ${ep}\n`;
+    }
+    content += '\n';
+    // Modules summary
+    content += '## Modules\n\n';
+    const modules = new Map();
+    for (const func of functions) {
+        const dir = path.dirname(func.file);
+        const mod = modules.get(dir) || { functions: 0, classes: 0, files: new Set() };
+        mod.functions++;
+        mod.files.add(func.file);
+        modules.set(dir, mod);
+    }
+    for (const cls of classes) {
+        const dir = path.dirname(cls.file);
+        const mod = modules.get(dir) || { functions: 0, classes: 0, files: new Set() };
+        mod.classes++;
+        mod.files.add(cls.file);
+        modules.set(dir, mod);
+    }
+    for (const [dir, info] of Array.from(modules.entries()).sort()) {
+        content += `M: ${dir}/\n`;
+        content += `- Functions: ${info.functions}, Classes: ${info.classes}, Files: ${info.files.size}\n\n`;
+    }
+    // Classes summary
+    content += '## Classes\n\n';
+    for (const cls of classes.slice(0, 50)) { // Limit for token efficiency
+        content += `C: ${cls.name}`;
+        if (cls.extends)
+            content += ` extends ${cls.extends}`;
+        if (cls.implements && cls.implements.length > 0) {
+            content += ` implements ${cls.implements.join(', ')}`;
+        }
+        content += ` @ ${cls.file}:${cls.line || '?'}\n`;
+        content += `- Methods: ${cls.methods.length}\n\n`;
+    }
+    if (classes.length > 50) {
+        content += `... and ${classes.length - 50} more classes\n\n`;
+    }
+    // Functions summary (top level only)
+    content += '## Top Functions\n\n';
+    const topFunctions = functions
+        .filter(f => !f.name.startsWith('_') && f.name[0] === f.name[0].toUpperCase() ||
+        f.file.includes('index') || f.file.includes('main'))
+        .slice(0, 100);
+    for (const func of topFunctions) {
+        content += `F: ${func.name}(${func.params}): ${func.returnType} @ ${func.file}:${func.line || '?'}\n`;
+    }
+    if (functions.length > topFunctions.length) {
+        content += `... and ${functions.length - topFunctions.length} more functions\n`;
+    }
+    await writeMemoryFile(MEMORY_FILES.PROJECT_MAP, content);
 }
 async function rebuildFunctionsFile(functions) {
     // Group by file

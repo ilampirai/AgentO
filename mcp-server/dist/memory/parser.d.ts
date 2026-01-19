@@ -2,7 +2,7 @@
  * Memory File Parsers
  * Parse markdown formats into structured data
  */
-import type { FunctionEntry, RuleEntry, AttemptEntry, ArchitecturePattern } from '../types.js';
+import type { FunctionEntry, RuleEntry, AttemptEntry, ArchitecturePattern, ClassEntry } from '../types.js';
 /**
  * Parse FUNCTIONS.md into structured entries
  * Format: F:functionName(params):returnType [L1:dep1,dep2]
@@ -50,7 +50,16 @@ export declare function parseDiscovery(content: string): Set<string>;
  */
 export declare function extractFunctionsFromCode(code: string, filepath: string): FunctionEntry[];
 /**
+ * Extract classes and methods from source code
+ */
+export declare function extractClassesFromCode(code: string, filepath: string): ClassEntry[];
+/**
  * Check for similar function signatures (duplicate detection)
  */
 export declare function findSimilarFunctions(newFunc: FunctionEntry, existing: FunctionEntry[]): FunctionEntry[];
+/**
+ * Extract function calls from code
+ * Returns map of function name -> array of called function names
+ */
+export declare function extractCallGraph(code: string, functions: FunctionEntry[], classes: ClassEntry[]): Map<string, string[]>;
 //# sourceMappingURL=parser.d.ts.map
