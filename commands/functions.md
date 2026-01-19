@@ -68,6 +68,39 @@ The function index is automatically updated when:
 - Files are written with `agento_write`
 - Codebase is indexed with `agento_index`
 
+## ⚠️ Function Not Found? Follow This Workflow
+
+If you search for a function and it's not in the index:
+
+### Step 1: Reindex (MANDATORY)
+```
+/agento:index --force
+```
+or
+```
+agento_index {force: true}
+```
+The function might have been added since last index. Reindexing updates FUNCTIONS.md and FLOW_GRAPH.json.
+
+### Step 2: Try Again
+```
+/agento:functions functionName
+```
+or
+```
+agento_symbol {name: "functionName"}
+```
+The function should now be in the index.
+
+### Step 3: If Still Not Found
+Use your thinking ability and search:
+```
+agento_search {query: "functionName", type: "functions"}
+```
+Then read relevant files with `agento_read` to locate it manually.
+
+**CRITICAL**: Always reindex before giving up. Never skip Step 1.
+
 ## Format
 
 Functions are stored in `.agenticMemory/FUNCTIONS.md`:
@@ -77,5 +110,6 @@ Functions are stored in `.agenticMemory/FUNCTIONS.md`:
 F:authenticateUser(email:string,password:string):Promise<User> [L1:hashPassword,validateEmail]
 F:validateSession(token:string):boolean [L1:decodeJWT]
 ```
+
 
 
