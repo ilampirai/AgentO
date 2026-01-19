@@ -41,3 +41,4 @@ Available patterns:
 - Custom string - Blocks if content contains the string
 
 
+
