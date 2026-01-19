@@ -15,13 +15,13 @@ import type { MemoryInput } from '../types.js';
 
 export const memoryToolDef = {
   name: 'agento_memory',
-  description: 'Direct access to AgentO memory files. Read, write, or append to FUNCTIONS.md, RULES.md, ARCHITECTURE.md, etc.',
+  description: 'Direct access to AgentO memory files. Read, write, or append to FUNCTIONS.md, PROJECT_MAP.md, FLOW_GRAPH.json, etc.',
   inputSchema: {
     type: 'object' as const,
     properties: {
       file: {
         type: 'string',
-        description: 'Memory file name: FUNCTIONS, RULES, ARCHITECTURE, DISCOVERY, ATTEMPTS, ERRORS, VERSIONS, DATASTRUCTURE',
+        description: 'Memory file name: FUNCTIONS, PROJECT_MAP, FLOW_GRAPH, RULES, ARCHITECTURE, DISCOVERY, ATTEMPTS, ERRORS, VERSIONS, DATASTRUCTURE',
       },
       action: {
         type: 'string',
@@ -66,7 +66,7 @@ export async function handleMemory(args: unknown) {
       content: [{ 
         type: 'text', 
         text: '❌ Missing required parameter: file\n\n' +
-              'Available files: FUNCTIONS, RULES, ARCHITECTURE, DISCOVERY, ATTEMPTS, ERRORS, VERSIONS, DATASTRUCTURE' 
+              'Available files: FUNCTIONS, PROJECT_MAP, FLOW_GRAPH, RULES, ARCHITECTURE, DISCOVERY, ATTEMPTS, ERRORS, VERSIONS, DATASTRUCTURE' 
       }],
       isError: true,
     };
@@ -81,7 +81,7 @@ export async function handleMemory(args: unknown) {
       content: [{ 
         type: 'text', 
         text: `❌ Unknown memory file: ${file}\n\n` +
-              'Available files: FUNCTIONS, RULES, ARCHITECTURE, DISCOVERY, ATTEMPTS, ERRORS, VERSIONS, DATASTRUCTURE'
+              'Available files: FUNCTIONS, PROJECT_MAP, FLOW_GRAPH, RULES, ARCHITECTURE, DISCOVERY, ATTEMPTS, ERRORS, VERSIONS, DATASTRUCTURE'
       }],
       isError: true,
     };
@@ -167,5 +167,6 @@ function invalidateCacheFor(fileKey: string): void {
       break;
   }
 }
+
 
 
