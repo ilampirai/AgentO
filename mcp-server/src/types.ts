@@ -12,6 +12,22 @@ export interface FunctionEntry {
   dependencies: string[];
 }
 
+export interface MethodEntry {
+  name: string;
+  line?: number;
+  params: string;
+  returnType: string;
+}
+
+export interface ClassEntry {
+  name: string;
+  file: string;
+  line?: number;
+  extends?: string;
+  implements?: string[];
+  methods: MethodEntry[];
+}
+
 export interface RuleEntry {
   id: string;
   description: string;
@@ -58,6 +74,30 @@ export interface LoopIteration {
   timestamp: string;
 }
 
+// Flow graph types
+export interface SymbolNode {
+  id: string;
+  name: string;
+  kind: 'function' | 'method' | 'class';
+  file: string;
+  line?: number;
+  signature?: string;
+}
+
+export interface FlowEdge {
+  from: string;
+  to: string;
+  type: 'call' | 'import' | 'extend' | 'implement';
+}
+
+export interface FlowGraph {
+  version: string;
+  generated: string;
+  nodes: Record<string, SymbolNode>;
+  edges: FlowEdge[];
+  entryPoints: string[];
+}
+
 // Tool input types
 export interface WriteInput {
   path: string;
@@ -93,6 +133,28 @@ export interface FunctionsInput {
   file?: string;
   checkDuplicates?: boolean;
   code?: string;
+}
+
+export interface FlowInput {
+  ids: string[];
+  depth?: number;
+  direction?: 'in' | 'out' | 'both';
+  maxNodes?: number;
+  maxEdges?: number;
+  includeUnresolved?: boolean;
+}
+
+export interface SymbolInput {
+  ids?: string[];
+  name?: string;
+  file?: string;
+  kind?: 'function' | 'method' | 'class';
+  limit?: number;
+}
+
+export interface EntryPointsInput {
+  query: string;
+  kind?: 'route' | 'handler' | 'command' | 'all';
 }
 
 export interface IndexInput {
@@ -158,6 +220,8 @@ export const MEMORY_FILES = {
   ERRORS: '.agenticMemory/ERRORS.md',
   VERSIONS: '.agenticMemory/VERSIONS.md',
   DATASTRUCTURE: '.agenticMemory/DATASTRUCTURE.md',
+  PROJECT_MAP: '.agenticMemory/PROJECT_MAP.md',
+  FLOW_GRAPH: '.agenticMemory/FLOW_GRAPH.json',
   LOOP_STATE: '.agenticMemory/LOOP_STATE.json',
   CONFIG: '.agenticMemory/config.json',
 } as const;
