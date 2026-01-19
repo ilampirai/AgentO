@@ -177,6 +177,7 @@ export async function initializeMemoryFiles(): Promise<void> {
     [MEMORY_FILES.ERRORS]: '# Known Errors & Solutions\n\n',
     [MEMORY_FILES.VERSIONS]: '# Dependency Versions\n\n',
     [MEMORY_FILES.DATASTRUCTURE]: '# Data Structures\n\n## Schemas\n\n## API Contracts\n\n',
+    [MEMORY_FILES.PROJECT_MAP]: '# Project Map\n\nAuto-generated project structure and symbol index.\n\n',
   };
   
   for (const [file, content] of Object.entries(templates)) {
@@ -208,6 +209,17 @@ export async function initializeMemoryFiles(): Promise<void> {
       maxLoopIterations: 10,
     });
   }
+
+  if (!(await memoryFileExists(MEMORY_FILES.FLOW_GRAPH))) {
+    await writeJsonMemoryFile(MEMORY_FILES.FLOW_GRAPH, {
+      version: '1.0',
+      generated: new Date().toISOString(),
+      nodes: {},
+      edges: [],
+      entryPoints: [],
+    });
+  }
 }
+
 
 
