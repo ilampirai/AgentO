@@ -21,8 +21,6 @@ import { handleMemory, memoryToolDef } from './tools/memory.js';
 import { handleRules, rulesToolDef } from './tools/rules.js';
 import { handleFunctions, functionsToolDef } from './tools/functions.js';
 import { handleIndex, indexToolDef } from './tools/indexTool.js';
-import { handleLoop, loopToolDef } from './tools/loop.js';
-import { handleTest, testToolDef } from './tools/test.js';
 import { handleConfig, configToolDef } from './tools/config.js';
 import { handleSearch, searchToolDef } from './tools/search.js';
 import { handleFlow, flowToolDef } from './tools/flow.js';
@@ -52,8 +50,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       rulesToolDef,
       functionsToolDef,
       indexToolDef,
-      loopToolDef,
-      testToolDef,
       configToolDef,
       searchToolDef,
       flowToolDef,
@@ -83,10 +79,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return await handleFunctions(args);
       case 'agento_index':
         return await handleIndex(args);
-      case 'agento_loop':
-        return await handleLoop(args);
-      case 'agento_test':
-        return await handleTest(args);
       case 'agento_config':
         return await handleConfig(args);
       case 'agento_search':

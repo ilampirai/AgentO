@@ -7,8 +7,6 @@ When user runs `/agento <prompt>`, use ONLY AgentO MCP tools:
 | Write | `agento_write` |
 | Read | `agento_read` |
 | Commands | `agento_bash` |
-| Tests | `agento_test` |
-| Fix loops | `agento_loop` |
 | Search | `agento_search` |
 | **Index codebase** | `agento_index` |
 | **Get flow graph** | `agento_flow` |

@@ -57,23 +57,6 @@ export interface ErrorEntry {
   files: string[];
 }
 
-export interface LoopState {
-  active: boolean;
-  task: string;
-  completionMarker: string;
-  maxIterations: number;
-  currentIteration: number;
-  startedAt: string;
-  history: LoopIteration[];
-}
-
-export interface LoopIteration {
-  iteration: number;
-  output: string;
-  completed: boolean;
-  timestamp: string;
-}
-
 // Flow graph types
 export interface SymbolNode {
   id: string;
@@ -162,20 +145,6 @@ export interface IndexInput {
   force?: boolean;
 }
 
-export interface LoopInput {
-  task: string;
-  until: string;
-  max?: number;
-  testCommand?: string;
-}
-
-export interface TestInput {
-  framework?: 'playwright' | 'jest' | 'pytest' | 'phpunit' | 'auto';
-  pattern?: string;
-  maxRetries?: number;
-  fixOnFail?: boolean;
-}
-
 export interface ConfigInput {
   action: 'get' | 'set' | 'reset' | 'status';
   key?: string;
@@ -191,14 +160,70 @@ export interface SearchInput {
   maxResults?: number;
 }
 
+// Environment type (detected during init)
+export interface EnvironmentInfo {
+  // OS
+  os: 'win32' | 'linux' | 'darwin';
+  osName: string; // "Windows 11", "Ubuntu 22.04", "macOS 14"
+  arch: string;
+  pathSeparator: '\\' | '/';
+  lineEnding: 'CRLF' | 'LF';
+
+  // Shell
+  shell: string;
+  shellType: 'powershell' | 'cmd' | 'bash' | 'zsh' | 'fish' | 'unknown';
+
+  // Command mappings (os-specific)
+  commands: {
+    list: string;      // dir | ls
+    remove: string;    // del/rmdir | rm
+    copy: string;      // copy | cp
+    move: string;      // move | mv
+    read: string;      // type | cat
+    find: string;      // where | which
+    clear: string;     // cls | clear
+    mkdir: string;     // mkdir | mkdir -p
+    touch: string;     // type nul > | touch
+    grep: string;      // findstr | grep
+  };
+
+  // Dev tools (null if not installed)
+  tools: {
+    node: string | null;
+    npm: string | null;
+    yarn: string | null;
+    pnpm: string | null;
+    python: string | null;
+    pip: string | null;
+    git: string | null;
+    docker: string | null;
+  };
+
+  // Project context
+  project: {
+    type: 'node' | 'python' | 'php' | 'rust' | 'go' | 'java' | 'mixed' | 'unknown';
+    packageManager: string | null;
+    hasLockfile: boolean;
+    frameworks: string[]; // detected frameworks like "react", "express", "django"
+  };
+
+  // Runtime paths
+  paths: {
+    cwd: string;
+    home: string;
+    temp: string;
+  };
+
+  // Detected at init time
+  detectedAt: string;
+}
+
 // Config type
 export interface AgentOConfig {
   lineLimit: number;
   strictMode: boolean;
   autoIndex: boolean;
   autoMemoryUpdate: boolean;
-  testFramework: string;
-  maxLoopIterations: number;
   [key: string]: string | number | boolean;
 }
 
@@ -222,7 +247,6 @@ export const MEMORY_FILES = {
   DATASTRUCTURE: '.agenticMemory/DATASTRUCTURE.md',
   PROJECT_MAP: '.agenticMemory/PROJECT_MAP.md',
   FLOW_GRAPH: '.agenticMemory/FLOW_GRAPH.json',
-  LOOP_STATE: '.agenticMemory/LOOP_STATE.json',
   CONFIG: '.agenticMemory/config.json',
 } as const;
 
@@ -232,7 +256,5 @@ export const DEFAULT_CONFIG: AgentOConfig = {
   strictMode: true,
   autoIndex: true,
   autoMemoryUpdate: true,
-  testFramework: 'auto',
-  maxLoopIterations: 10,
 };
 

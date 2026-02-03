@@ -4,14 +4,13 @@
  */
 
 import { memoryCache } from '../memory/cache.js';
-import { 
-  readJsonMemoryFile, 
+import {
   writeJsonMemoryFile,
   memoryFileExists,
-  readMemoryFile 
+  readMemoryFile
 } from '../memory/loader.js';
 import { MEMORY_FILES, DEFAULT_CONFIG } from '../types.js';
-import type { ConfigInput, AgentOConfig, LoopState } from '../types.js';
+import type { ConfigInput, AgentOConfig } from '../types.js';
 import { parseFunctions, parseRules, parseAttempts, parseDiscovery } from '../memory/parser.js';
 
 export const configToolDef = {
@@ -27,7 +26,7 @@ export const configToolDef = {
       },
       key: {
         type: 'string',
-        description: 'Config key: lineLimit, strictMode, autoIndex, autoMemoryUpdate, testFramework, maxLoopIterations',
+        description: 'Config key: lineLimit, strictMode, autoIndex, autoMemoryUpdate',
       },
       value: {
         type: ['string', 'number', 'boolean'],
@@ -202,7 +201,7 @@ async function getStatus() {
   output += `- Line limit: ${config.lineLimit}\n`;
   output += `- Strict mode: ${config.strictMode ? 'ON' : 'OFF'}\n`;
   output += `- Auto-index: ${config.autoIndex ? 'ON' : 'OFF'}\n`;
-  output += `- Test framework: ${config.testFramework}\n\n`;
+  output += `- Auto memory update: ${config.autoMemoryUpdate ? 'ON' : 'OFF'}\n\n`;
   
   // Functions
   try {
@@ -248,31 +247,6 @@ async function getStatus() {
     output += `- Blocked patterns: ${blocked}\n\n`;
   } catch {
     output += `⚠️ **Attempts**: Not initialized\n\n`;
-  }
-  
-  // Loop state
-  try {
-    const loopState = await readJsonMemoryFile<LoopState>(MEMORY_FILES.LOOP_STATE, {
-      active: false,
-      task: '',
-      completionMarker: '',
-      maxIterations: 10,
-      currentIteration: 0,
-      startedAt: '',
-      history: [],
-    });
-    
-    output += `🔄 **Loop**\n`;
-    if (loopState.active) {
-      output += `- Status: ACTIVE\n`;
-      output += `- Task: ${loopState.task}\n`;
-      output += `- Progress: ${loopState.currentIteration}/${loopState.maxIterations}\n`;
-    } else {
-      output += `- Status: Inactive\n`;
-    }
-    output += '\n';
-  } catch {
-    output += `🔄 **Loop**: Not initialized\n\n`;
   }
   
   // Memory files existence
