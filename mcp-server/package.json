@@ -1,6 +1,6 @@
 {
   "name": "@ilam/agento-mcp",
-  "version": "5.0.0",
+  "version": "5.1.1",
   "description": "AgentO MCP Server - Hard enforcement for code quality and memory management in Claude Code",
   "type": "module",
   "main": "dist/index.js",
@@ -36,7 +36,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ilampirai/AgentO.git"
+    "url": "git+https://github.com/ilampirai/AgentO.git"
   },
   "homepage": "https://github.com/ilampirai/AgentO#readme",
   "bugs": {
