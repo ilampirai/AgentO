@@ -1,8 +1,8 @@
-# AgentO v5.0.0
+# AgentO v5.1.3
 
 **MCP-based code quality enforcement and intelligent code understanding for Claude Code.**
 
-AgentO provides hard enforcement of code quality rules at the tool level. Unlike soft prompt-based approaches, AgentO's MCP server intercepts all file operations and enforces rules automatically. **v5.0 adds flow graph tools for efficient code understanding with 90% token savings.**
+AgentO provides hard enforcement of code quality rules at the tool level. Unlike soft prompt-based approaches, AgentO's MCP server intercepts all file operations and enforces rules automatically. **v5.1 adds flow graph tools for efficient code understanding with 90% token savings.**
 
 ## Dependency
 
@@ -181,9 +181,9 @@ AgentO MCP Server
 Memory Files (.agenticMemory/)
 ```
 
-## v5.0.0 - Flow Graph Tools
+## v5.1 - Flow Graph Tools
 
-**New in v5.0:** Efficient code understanding with flow graph tools.
+**New in v5.1:** Efficient code understanding with flow graph tools.
 
 ### Workflow Example
 
