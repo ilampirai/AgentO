@@ -1,12 +1,5 @@
 {
   "mcpServers": {
-    "playwright": {
-      "command": "npx",
-      "args": ["@anthropic-ai/mcp-server-playwright@latest"],
-      "env": {
-        "PLAYWRIGHT_HEADLESS": "true"
-      }
-    },
     "exa": {
       "command": "npx",
       "args": ["exa-mcp-server"],
