@@ -107,7 +107,9 @@ class MemoryCache {
     }
     
     try {
-      const data = JSON.parse(content) as AgentOConfig;
+      const parsed = JSON.parse(content) as Partial<AgentOConfig>;
+      // Merge with defaults to fill in any missing keys from old configs
+      const data = { ...DEFAULT_CONFIG, ...parsed } as AgentOConfig;
       this.configCache = { data, hash, timestamp: Date.now() };
       return data;
     } catch {
