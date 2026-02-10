@@ -10,6 +10,8 @@ export interface FunctionEntry {
   params: string;
   returnType: string;
   dependencies: string[];
+  className?: string;     // Class this method belongs to (if any)
+  parentClass?: string;   // Parent class name (if className extends something)
 }
 
 export interface MethodEntry {
@@ -55,6 +57,15 @@ export interface ErrorEntry {
   error: string;
   solution: string;
   files: string[];
+}
+
+// Duplicate detection types
+export type DuplicateTier = 'exact' | 'cross-file' | 'override' | 'interface-impl' | 'common-name' | 'similar-sig';
+
+export interface DuplicateResult {
+  tier: DuplicateTier;
+  existing: FunctionEntry;
+  action: 'BLOCK' | 'WARN' | 'SKIP' | 'INFO';
 }
 
 // Flow graph types
@@ -164,7 +175,7 @@ export interface SearchInput {
 export interface EnvironmentInfo {
   // OS
   os: 'win32' | 'linux' | 'darwin';
-  osName: string; // "Windows 11", "Ubuntu 22.04", "macOS 14"
+  osName: string;
   arch: string;
   pathSeparator: '\\' | '/';
   lineEnding: 'CRLF' | 'LF';
@@ -175,16 +186,16 @@ export interface EnvironmentInfo {
 
   // Command mappings (os-specific)
   commands: {
-    list: string;      // dir | ls
-    remove: string;    // del/rmdir | rm
-    copy: string;      // copy | cp
-    move: string;      // move | mv
-    read: string;      // type | cat
-    find: string;      // where | which
-    clear: string;     // cls | clear
-    mkdir: string;     // mkdir | mkdir -p
-    touch: string;     // type nul > | touch
-    grep: string;      // findstr | grep
+    list: string;
+    remove: string;
+    copy: string;
+    move: string;
+    read: string;
+    find: string;
+    clear: string;
+    mkdir: string;
+    touch: string;
+    grep: string;
   };
 
   // Dev tools (null if not installed)
@@ -204,7 +215,7 @@ export interface EnvironmentInfo {
     type: 'node' | 'python' | 'php' | 'rust' | 'go' | 'java' | 'mixed' | 'unknown';
     packageManager: string | null;
     hasLockfile: boolean;
-    frameworks: string[]; // detected frameworks like "react", "express", "django"
+    frameworks: string[];
   };
 
   // Runtime paths
@@ -224,6 +235,7 @@ export interface AgentOConfig {
   strictMode: boolean;
   autoIndex: boolean;
   autoMemoryUpdate: boolean;
+  deferIndex: boolean;
   [key: string]: string | number | boolean;
 }
 
@@ -248,13 +260,14 @@ export const MEMORY_FILES = {
   PROJECT_MAP: '.agenticMemory/PROJECT_MAP.md',
   FLOW_GRAPH: '.agenticMemory/FLOW_GRAPH.json',
   CONFIG: '.agenticMemory/config.json',
+  DIRTY: '.agenticMemory/.dirty',
 } as const;
 
-// Default config
+// Default config - no line limit by default, user defines rules
 export const DEFAULT_CONFIG: AgentOConfig = {
-  lineLimit: 500,
+  lineLimit: 0,
   strictMode: true,
   autoIndex: true,
   autoMemoryUpdate: true,
+  deferIndex: true,
 };
-

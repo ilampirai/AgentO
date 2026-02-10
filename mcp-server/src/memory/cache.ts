@@ -1,10 +1,10 @@
 /**
  * Memory Cache System
- * In-memory caching with hash-based invalidation
+ * In-memory caching with hash-based invalidation + dirty file tracking
  */
 
 import * as crypto from 'crypto';
-import { readMemoryFile } from './loader.js';
+import { readMemoryFile, writeMemoryFile, appendMemoryFile, ensureMemoryDir } from './loader.js';
 import { parseFunctions, parseRules, parseAttempts, parseDiscovery } from './parser.js';
 import type { FunctionEntry, RuleEntry, AttemptEntry, AgentOConfig } from '../types.js';
 import { MEMORY_FILES, DEFAULT_CONFIG } from '../types.js';
@@ -21,94 +21,81 @@ class MemoryCache {
   private attemptsCache: CacheEntry<AttemptEntry[]> | null = null;
   private discoveryCache: CacheEntry<Set<string>> | null = null;
   private configCache: CacheEntry<AgentOConfig> | null = null;
-  
+
+  // In-memory dirty file tracking (also persisted to .dirty file)
+  private dirtyFiles: Set<string> = new Set();
+
   private hashContent(content: string): string {
     return crypto.createHash('md5').update(content).digest('hex');
   }
-  
-  /**
-   * Get functions from cache or reload
-   */
+
   async getFunctions(): Promise<FunctionEntry[]> {
     const content = await readMemoryFile(MEMORY_FILES.FUNCTIONS);
     const hash = this.hashContent(content);
-    
+
     if (this.functionsCache && this.functionsCache.hash === hash) {
       return this.functionsCache.data;
     }
-    
+
     const data = parseFunctions(content);
     this.functionsCache = { data, hash, timestamp: Date.now() };
     return data;
   }
-  
-  /**
-   * Get rules from cache or reload
-   */
+
   async getRules(): Promise<RuleEntry[]> {
     const content = await readMemoryFile(MEMORY_FILES.RULES);
     const hash = this.hashContent(content);
-    
+
     if (this.rulesCache && this.rulesCache.hash === hash) {
       return this.rulesCache.data;
     }
-    
+
     const data = parseRules(content);
     this.rulesCache = { data, hash, timestamp: Date.now() };
     return data;
   }
-  
-  /**
-   * Get attempts from cache or reload
-   */
+
   async getAttempts(): Promise<AttemptEntry[]> {
     const content = await readMemoryFile(MEMORY_FILES.ATTEMPTS);
     const hash = this.hashContent(content);
-    
+
     if (this.attemptsCache && this.attemptsCache.hash === hash) {
       return this.attemptsCache.data;
     }
-    
+
     const data = parseAttempts(content);
     this.attemptsCache = { data, hash, timestamp: Date.now() };
     return data;
   }
-  
-  /**
-   * Get discovery from cache or reload
-   */
+
   async getDiscovery(): Promise<Set<string>> {
     const content = await readMemoryFile(MEMORY_FILES.DISCOVERY);
     const hash = this.hashContent(content);
-    
+
     if (this.discoveryCache && this.discoveryCache.hash === hash) {
       return this.discoveryCache.data;
     }
-    
+
     const data = parseDiscovery(content);
     this.discoveryCache = { data, hash, timestamp: Date.now() };
     return data;
   }
-  
-  /**
-   * Get config from cache or reload
-   */
+
   async getConfig(): Promise<AgentOConfig> {
     const content = await readMemoryFile(MEMORY_FILES.CONFIG);
-    
+
     if (!content) {
       return DEFAULT_CONFIG;
     }
-    
+
     const hash = this.hashContent(content);
-    
+
     if (this.configCache && this.configCache.hash === hash) {
       return this.configCache.data;
     }
-    
+
     try {
       const parsed = JSON.parse(content) as Partial<AgentOConfig>;
-      // Merge with defaults to fill in any missing keys from old configs
       const data = { ...DEFAULT_CONFIG, ...parsed } as AgentOConfig;
       this.configCache = { data, hash, timestamp: Date.now() };
       return data;
@@ -116,45 +103,71 @@ class MemoryCache {
       return DEFAULT_CONFIG;
     }
   }
-  
+
+  // ─── Dirty file tracking ─────────────────────────────────────────────────
+
   /**
-   * Invalidate functions cache (after update)
+   * Mark a file as needing reindexing.
+   * Tracks in-memory and persists to .dirty file.
    */
-  invalidateFunctions(): void {
-    this.functionsCache = null;
+  async markDirty(filepath: string): Promise<void> {
+    if (this.dirtyFiles.has(filepath)) return;
+    this.dirtyFiles.add(filepath);
+    try {
+      await ensureMemoryDir();
+      await appendMemoryFile(MEMORY_FILES.DIRTY, filepath + '\n');
+    } catch {
+      // Non-fatal
+    }
   }
-  
+
   /**
-   * Invalidate rules cache
+   * Get all dirty files (merges in-memory + persisted).
    */
-  invalidateRules(): void {
-    this.rulesCache = null;
+  async getDirtyFiles(): Promise<string[]> {
+    try {
+      const content = await readMemoryFile(MEMORY_FILES.DIRTY);
+      if (content) {
+        const fromFile = content.split('\n').map(l => l.trim()).filter(Boolean);
+        for (const f of fromFile) {
+          this.dirtyFiles.add(f);
+        }
+      }
+    } catch {
+      // Non-fatal
+    }
+    return Array.from(this.dirtyFiles);
   }
-  
+
   /**
-   * Invalidate attempts cache
+   * Check if there are any dirty files pending reindex.
    */
-  invalidateAttempts(): void {
-    this.attemptsCache = null;
+  async isDirty(): Promise<boolean> {
+    if (this.dirtyFiles.size > 0) return true;
+    const files = await this.getDirtyFiles();
+    return files.length > 0;
   }
-  
+
   /**
-   * Invalidate discovery cache
+   * Clear all dirty tracking (call after successful reindex).
    */
-  invalidateDiscovery(): void {
-    this.discoveryCache = null;
+  async clearDirty(): Promise<void> {
+    this.dirtyFiles.clear();
+    try {
+      await writeMemoryFile(MEMORY_FILES.DIRTY, '');
+    } catch {
+      // Non-fatal
+    }
   }
-  
-  /**
-   * Invalidate config cache
-   */
-  invalidateConfig(): void {
-    this.configCache = null;
-  }
-  
-  /**
-   * Clear all caches
-   */
+
+  // ─── Cache invalidation ──────────────────────────────────────────────────
+
+  invalidateFunctions(): void { this.functionsCache = null; }
+  invalidateRules(): void { this.rulesCache = null; }
+  invalidateAttempts(): void { this.attemptsCache = null; }
+  invalidateDiscovery(): void { this.discoveryCache = null; }
+  invalidateConfig(): void { this.configCache = null; }
+
   clearAll(): void {
     this.functionsCache = null;
     this.rulesCache = null;
@@ -164,8 +177,4 @@ class MemoryCache {
   }
 }
 
-// Singleton instance
 export const memoryCache = new MemoryCache();
-
-
-

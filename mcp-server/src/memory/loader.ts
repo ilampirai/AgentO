@@ -176,7 +176,7 @@ export async function initializeMemoryFiles(): Promise<void> {
   
   const templates: Record<string, string> = {
     [MEMORY_FILES.FUNCTIONS]: '# Functions Index\n\nAuto-generated function signatures with dependencies.\n\n',
-    [MEMORY_FILES.RULES]: '# Project Rules\n\n## System Rules\n\n- [SYS001] Max 500 lines per file\n- [SYS002] No duplicate functions\n\n## User Rules\n\n',
+    [MEMORY_FILES.RULES]: '# Project Rules\n\n## User Rules\n\nNo rules defined. Use /AgentO:rules to add project-specific rules.\n\n',
     [MEMORY_FILES.ARCHITECTURE]: '# Project Architecture\n\n## Structure\n\n## Patterns\n\n',
     [MEMORY_FILES.DISCOVERY]: '# Discovery Log\n\n## Explored Areas\n\n',
     [MEMORY_FILES.ATTEMPTS]: '# Attempted Actions\n\n## Blocked Patterns\n\n',
@@ -195,10 +195,11 @@ export async function initializeMemoryFiles(): Promise<void> {
   // Initialize JSON files
   if (!(await memoryFileExists(MEMORY_FILES.CONFIG))) {
     await writeJsonMemoryFile(MEMORY_FILES.CONFIG, {
-      lineLimit: 500,
+      lineLimit: 0,
       strictMode: true,
       autoIndex: true,
       autoMemoryUpdate: true,
+      deferIndex: true,
     });
   }
 

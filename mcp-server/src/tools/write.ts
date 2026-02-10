@@ -1,21 +1,11 @@
 /**
- * agento_write - The most critical tool
- * Enforces all rules before allowing file writes
+ * agento_write - Lean file writer
+ * Enforces user rules, writes the file, marks dirty for deferred indexing.
+ * NO inline FUNCTIONS.md updates - that's handled by agento_index.
  */
 
 import { memoryCache } from '../memory/cache.js';
-import { 
-  writeProjectFile, 
-  readMemoryFile, 
-  writeMemoryFile, 
-  appendMemoryFile 
-} from '../memory/loader.js';
-import { 
-  extractFunctionsFromCode, 
-  findSimilarFunctions, 
-  formatFunctionEntry 
-} from '../memory/parser.js';
-import { MEMORY_FILES } from '../types.js';
+import { writeProjectFile } from '../memory/loader.js';
 import type { WriteInput } from '../types.js';
 
 export const writeToolDef = {
@@ -40,82 +30,71 @@ export const writeToolDef = {
 export async function handleWrite(args: unknown) {
   const input = args as WriteInput;
   const { path, content } = input;
-  
+
   if (!path || content === undefined) {
     return {
       content: [{ type: 'text', text: '❌ Missing required parameters: path and content' }],
       isError: true,
     };
   }
-  
+
   const violations: string[] = [];
   const warnings: string[] = [];
-  
-  // Get config
   const config = await memoryCache.getConfig();
-  
-  // PRE-CHECK 1: Line count
   const lines = content.split('\n').length;
-  if (lines > config.lineLimit) {
+
+  // PRE-CHECK 1: Line count (only if lineLimit > 0)
+  if (config.lineLimit > 0 && lines > config.lineLimit) {
     violations.push(
-      `⛔ LINE LIMIT EXCEEDED: File would have ${lines} lines (max ${config.lineLimit}).\n` +
-      `   Split this file into smaller modules before writing.`
+      `⛔ LINE LIMIT: ${lines} lines (max ${config.lineLimit}). Split into smaller modules.`
     );
   }
-  
-  // PRE-CHECK 2: User Rules
+
+  // PRE-CHECK 2: User-defined rules
   const rules = await memoryCache.getRules();
   for (const rule of rules) {
     if (!rule.enabled) continue;
-    
-    // Check if rule applies to this file
+
     const filePatterns = rule.files.split(',').map(p => p.trim());
     const matchesFile = filePatterns.some(pattern => {
       if (pattern === '*') return true;
       const ext = pattern.replace('*', '');
       return path.endsWith(ext);
     });
-    
+
     if (!matchesFile) continue;
-    
-    // Apply rule checks based on pattern
+
     let violated = false;
     let message = '';
-    
+
     switch (rule.pattern) {
       case 'no-inline-css':
         if (content.includes('<style') || content.includes('style="')) {
           violated = true;
-          message = 'Found inline CSS. Move styles to separate .css file.';
+          message = 'Found inline CSS';
         }
         break;
-      
       case 'no-console':
         if (content.includes('console.log')) {
           violated = true;
-          message = 'Found console.log. Use proper logging.';
+          message = 'Found console.log';
         }
         break;
-      
       case 'no-any':
         if (content.includes(': any') || content.includes(':any')) {
           violated = true;
-          message = 'Found "any" type. Use specific types.';
+          message = 'Found "any" type';
         }
         break;
-      
       case 'max-lines':
-        // Already handled by line limit
-        break;
-      
+        break; // Handled by lineLimit config
       default:
-        // Custom pattern - check if content matches
         if (rule.pattern && content.includes(rule.pattern)) {
           violated = true;
           message = `Found forbidden pattern: ${rule.pattern}`;
         }
     }
-    
+
     if (violated) {
       const msg = `[${rule.id}] ${rule.description}: ${message}`;
       if (rule.action === 'BLOCK') {
@@ -125,35 +104,17 @@ export async function handleWrite(args: unknown) {
       }
     }
   }
-  
-  // PRE-CHECK 3: Duplicate functions
-  const existingFunctions = await memoryCache.getFunctions();
-  const newFunctions = extractFunctionsFromCode(content, path);
-  
-  for (const newFunc of newFunctions) {
-    const similar = findSimilarFunctions(newFunc, existingFunctions);
-    // Filter out functions from the same file (we're overwriting)
-    const duplicates = similar.filter(f => f.file !== path);
-    
-    if (duplicates.length > 0) {
-      const dupList = duplicates.map(d => `${d.name} in ${d.file}`).join(', ');
-      warnings.push(`⚠️ POTENTIAL DUPLICATE: ${newFunc.name} - similar to: ${dupList}`);
-    }
-  }
-  
-  // If violations in strict mode, block the write
+
+  // Block write if violations in strict mode
   if (violations.length > 0 && config.strictMode) {
-    return {
-      content: [{
-        type: 'text',
-        text: `❌ WRITE BLOCKED\n\n${violations.join('\n\n')}\n\n` +
-              (warnings.length > 0 ? `Warnings:\n${warnings.join('\n')}` : ''),
-      }],
-      isError: true,
-    };
+    let response = `❌ WRITE BLOCKED\n${violations.join('\n')}`;
+    if (warnings.length > 0) {
+      response += `\n${warnings.slice(0, 3).join('\n')}`;
+    }
+    return { content: [{ type: 'text', text: response }], isError: true };
   }
-  
-  // EXECUTE: Write the file
+
+  // WRITE the file
   try {
     await writeProjectFile(path, content);
   } catch (error) {
@@ -163,69 +124,24 @@ export async function handleWrite(args: unknown) {
       isError: true,
     };
   }
-  
-  // POST-ACTION 1: Update FUNCTIONS.md
-  if (newFunctions.length > 0 && config.autoMemoryUpdate) {
-    try {
-      // Read current FUNCTIONS.md
-      let functionsContent = await readMemoryFile(MEMORY_FILES.FUNCTIONS);
-      
-      // Remove old entries for this file
-      const fileHeader = `## ${path}`;
-      const headerIndex = functionsContent.indexOf(fileHeader);
-      if (headerIndex !== -1) {
-        // Find next file header or end
-        const nextHeaderMatch = functionsContent.slice(headerIndex + fileHeader.length).match(/\n## /);
-        const endIndex = nextHeaderMatch 
-          ? headerIndex + fileHeader.length + nextHeaderMatch.index!
-          : functionsContent.length;
-        functionsContent = functionsContent.slice(0, headerIndex) + functionsContent.slice(endIndex);
-      }
-      
-      // Add new entries
-      const newSection = `## ${path}\n${newFunctions.map(formatFunctionEntry).join('\n')}\n\n`;
-      functionsContent = functionsContent.trimEnd() + '\n\n' + newSection;
-      
-      await writeMemoryFile(MEMORY_FILES.FUNCTIONS, functionsContent);
-      memoryCache.invalidateFunctions();
-    } catch {
-      // Non-fatal - continue
-    }
-  }
-  
-  // POST-ACTION 2: Update VERSIONS.md if package file
-  const packageFiles = ['package.json', 'requirements.txt', 'go.mod', 'Cargo.toml', 'composer.json'];
-  if (packageFiles.some(pf => path.endsWith(pf))) {
-    try {
-      const timestamp = new Date().toISOString();
-      await appendMemoryFile(
-        MEMORY_FILES.VERSIONS,
-        `\n### ${timestamp}\nUpdated: ${path}\n`
-      );
-    } catch {
-      // Non-fatal
-    }
-  }
-  
-  // Build response
+
+  // Mark file as dirty for deferred indexing
+  await memoryCache.markDirty(path);
+
+  // Build concise response
   let response = `✅ File written: ${path} (${lines} lines)`;
-  
-  if (newFunctions.length > 0) {
-    response += `\n📝 Indexed ${newFunctions.length} function(s) to FUNCTIONS.md`;
-  }
-  
+
   if (warnings.length > 0) {
-    response += `\n\n${warnings.join('\n')}`;
+    const shown = warnings.slice(0, 3);
+    response += `\n${shown.join('\n')}`;
+    if (warnings.length > 3) {
+      response += `\n... and ${warnings.length - 3} more warnings`;
+    }
   }
-  
+
   if (violations.length > 0) {
-    response += `\n\n⚠️ Violations (not in strict mode):\n${violations.join('\n')}`;
+    response += `\n⚠️ ${violations.length} violation(s) (strict mode off)`;
   }
-  
-  return {
-    content: [{ type: 'text', text: response }],
-  };
+
+  return { content: [{ type: 'text', text: response }] };
 }
-
-
-
