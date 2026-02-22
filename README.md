@@ -1,4 +1,4 @@
-# AgentO v5.2.0
+# AgentO v5.2.1
 
 **MCP-based code quality enforcement and intelligent code understanding for Claude Code.**
 
