@@ -26,6 +26,7 @@ import { handleSearch, searchToolDef } from './tools/search.js';
 import { handleFlow, flowToolDef } from './tools/flow.js';
 import { handleSymbol, symbolToolDef } from './tools/symbol.js';
 import { handleEntryPoints, entrypointsToolDef } from './tools/entrypoints.js';
+import { handlePatterns, patternsToolDef } from './tools/patterns.js';
 
 const server = new Server(
   {
@@ -55,6 +56,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       flowToolDef,
       symbolToolDef,
       entrypointsToolDef,
+      patternsToolDef,
     ],
   };
 });
@@ -89,6 +91,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return await handleSymbol(args);
       case 'agento_entrypoints':
         return await handleEntryPoints(args);
+      case 'agento_patterns':
+        return await handlePatterns(args);
       default:
         return {
           content: [

@@ -1,6 +1,6 @@
 /**
  * agento_index - Codebase indexing with flow graph
- * Scans functions, classes, builds call graph.
+ * Scans functions, classes, data structures, routes, builds call graph.
  * Supports dirty-file-aware incremental indexing.
  */
 
@@ -16,13 +16,21 @@ import {
   extractFunctionsFromCode,
   extractClassesFromCode,
   extractCallGraph,
-  formatFunctionEntry
+  extractDataStructuresFromCode,
+  extractRoutesFromCode,
+  crossReferenceTypes,
+  formatFunctionEntry,
+  formatDataStructureEntry,
+  formatRouteEntry,
 } from '../memory/parser.js';
 import { MEMORY_FILES } from '../types.js';
 import type {
   IndexInput,
   FunctionEntry,
   ClassEntry,
+  DataStructureEntry,
+  RouteEntry,
+  ExtractionPattern,
   FlowGraph,
   SymbolNode,
   FlowEdge
@@ -32,7 +40,7 @@ import * as crypto from 'crypto';
 
 export const indexToolDef = {
   name: 'agento_index',
-  description: 'Index the codebase. Scans files for functions, classes, and builds flow graph. Updates FUNCTIONS.md, PROJECT_MAP.md, FLOW_GRAPH.json, DISCOVERY.md, and ARCHITECTURE.md.',
+  description: 'Index the codebase. Scans files for functions, classes, data structures, routes, and builds flow graph. Updates FUNCTIONS.md, PROJECT_MAP.md, DATASTRUCTURE.md, FLOW_GRAPH.json, DISCOVERY.md, and ARCHITECTURE.md.',
   inputSchema: {
     type: 'object' as const,
     properties: {
@@ -49,7 +57,7 @@ export const indexToolDef = {
   },
 };
 
-const CODE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.py', '.php', '.go', '.rs', '.java'];
+const CODE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.py', '.php', '.go', '.rs', '.java', '.mjs', '.cjs'];
 const ENTRY_POINT_PATTERNS = [
   /server\.ts$/i, /main\.ts$/i, /index\.ts$/i, /app\.ts$/i,
   /cli\.ts$/i, /start\.ts$/i, /entry\.ts$/i,
@@ -75,9 +83,15 @@ export async function handleIndex(args: unknown) {
       filesScanned: 0,
       functionsFound: 0,
       classesFound: 0,
+      dataStructuresFound: 0,
+      routesFound: 0,
       edgesFound: 0,
       directoriesExplored: new Set<string>(),
     };
+
+    // Load config patterns
+    const config = await memoryCache.getConfig();
+    const configPatterns: ExtractionPattern[] = config.patterns || [];
 
     // Check for dirty files (incremental indexing)
     const dirtyFiles = await memoryCache.getDirtyFiles();
@@ -103,6 +117,8 @@ export async function handleIndex(args: unknown) {
 
     const allFunctions: FunctionEntry[] = force ? [] : [...existingFunctions];
     const allClasses: ClassEntry[] = [];
+    const allDataStructures: DataStructureEntry[] = [];
+    const allRoutes: RouteEntry[] = [];
     const callGraphMap = new Map<string, string[]>();
     const entryPoints: string[] = [];
     const newFiles: string[] = [];
@@ -120,14 +136,12 @@ export async function handleIndex(args: unknown) {
         const content = await readProjectFile(filepath);
 
         // Remove old entries for this file before adding new ones
-        const oldCount = allFunctions.length;
         const filtered = allFunctions.filter(f => f.file !== filepath);
-        // Splice in-place
         allFunctions.length = 0;
         allFunctions.push(...filtered);
 
-        // Extract functions (now class-aware)
-        const functions = extractFunctionsFromCode(content, filepath);
+        // Extract functions (now dynamic-pattern-aware)
+        const functions = extractFunctionsFromCode(content, filepath, configPatterns);
         if (functions.length > 0) {
           allFunctions.push(...functions);
           stats.functionsFound += functions.length;
@@ -139,6 +153,26 @@ export async function handleIndex(args: unknown) {
         if (classes.length > 0) {
           allClasses.push(...classes);
           stats.classesFound += classes.length;
+          if (!newFiles.includes(filepath)) {
+            newFiles.push(filepath);
+          }
+        }
+
+        // Extract data structures
+        const dataStructures = extractDataStructuresFromCode(content, filepath, configPatterns);
+        if (dataStructures.length > 0) {
+          allDataStructures.push(...dataStructures);
+          stats.dataStructuresFound += dataStructures.length;
+          if (!newFiles.includes(filepath)) {
+            newFiles.push(filepath);
+          }
+        }
+
+        // Extract routes
+        const routes = extractRoutesFromCode(content, filepath, configPatterns);
+        if (routes.length > 0) {
+          allRoutes.push(...routes);
+          stats.routesFound += routes.length;
           if (!newFiles.includes(filepath)) {
             newFiles.push(filepath);
           }
@@ -159,29 +193,35 @@ export async function handleIndex(args: unknown) {
       }
     }
 
-    // Also extract classes from non-dirty files for flow graph completeness
+    // For incremental indexing, also extract classes/DS/routes from non-dirty files
     if (!force && hasDirty) {
       const nonDirtyFiles = allFiles.filter(f => !filesToProcess.includes(f));
       for (const filepath of nonDirtyFiles) {
         try {
           const content = await readProjectFile(filepath);
           const classes = extractClassesFromCode(content, filepath);
-          if (classes.length > 0) {
-            allClasses.push(...classes);
-          }
+          if (classes.length > 0) allClasses.push(...classes);
+          const ds = extractDataStructuresFromCode(content, filepath, configPatterns);
+          if (ds.length > 0) allDataStructures.push(...ds);
+          const routes = extractRoutesFromCode(content, filepath, configPatterns);
+          if (routes.length > 0) allRoutes.push(...routes);
         } catch {
           // Skip
         }
       }
     }
 
-    // Build flow graph
-    const flowGraph = buildFlowGraph(allFunctions, allClasses, callGraphMap, entryPoints);
+    // Cross-reference: link types to functions that use them
+    crossReferenceTypes(allDataStructures, allFunctions);
+
+    // Build flow graph (now includes routes and data structures)
+    const flowGraph = buildFlowGraph(allFunctions, allClasses, allDataStructures, allRoutes, callGraphMap, entryPoints);
 
     // Update memory files
     if (newFiles.length > 0 || force || hasDirty) {
       await rebuildFunctionsFile(allFunctions);
-      await buildProjectMap(allFunctions, allClasses, entryPoints);
+      await buildProjectMap(allFunctions, allClasses, allRoutes, entryPoints);
+      await rebuildDataStructuresFile(allDataStructures);
       await writeJsonMemoryFile(MEMORY_FILES.FLOW_GRAPH, flowGraph);
       memoryCache.invalidateFunctions();
     }
@@ -200,8 +240,9 @@ export async function handleIndex(args: unknown) {
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
 
     let output = `✅ **Indexing Complete** (${elapsed}s)\n\n`;
-    output += `📊 Files: ${stats.filesScanned} scanned | Functions: ${stats.functionsFound} | Classes: ${stats.classesFound} | Edges: ${stats.edgesFound}\n`;
-    output += `📦 Total in index: ${allFunctions.length} functions | Entry points: ${entryPoints.length}\n`;
+    output += `📊 Files: ${stats.filesScanned} scanned | Functions: ${stats.functionsFound} | Classes: ${stats.classesFound}\n`;
+    output += `📐 Data Structures: ${stats.dataStructuresFound} | Routes: ${stats.routesFound} | Edges: ${stats.edgesFound}\n`;
+    output += `📦 Total: ${allFunctions.length} functions | ${allDataStructures.length} types | ${allRoutes.length} routes | ${entryPoints.length} entry points\n`;
 
     if (hasDirty) {
       output += `🔄 Dirty files processed: ${dirtyFiles.length}\n`;
@@ -227,6 +268,8 @@ export async function handleIndex(args: unknown) {
 function buildFlowGraph(
   functions: FunctionEntry[],
   classes: ClassEntry[],
+  dataStructures: DataStructureEntry[],
+  routes: RouteEntry[],
   callGraph: Map<string, string[]>,
   entryPoints: string[]
 ): FlowGraph {
@@ -290,6 +333,56 @@ function buildFlowGraph(
     }
   }
 
+  // Data structure nodes + uses edges
+  for (const ds of dataStructures) {
+    const dsId = generateSymbolId(ds.name, 'datastructure', ds.file);
+    nodes[dsId] = {
+      id: dsId,
+      name: ds.name,
+      kind: 'datastructure',
+      file: ds.file,
+      line: ds.line,
+      signature: `${ds.kind} ${ds.name}${ds.extends ? ` extends ${ds.extends}` : ''}`,
+    };
+
+    // Add 'uses' edges from functions that reference this type
+    for (const funcName of ds.usedBy) {
+      const funcNode = Object.values(nodes).find(
+        n => n.name === funcName && (n.kind === 'function' || n.kind === 'method')
+      );
+      if (funcNode) {
+        edges.push({ from: funcNode.id, to: dsId, type: 'uses' });
+      }
+    }
+  }
+
+  // Route nodes
+  for (const route of routes) {
+    const routeName = `${route.method} ${route.path}`;
+    const routeId = generateSymbolId(routeName, 'route', route.file);
+    nodes[routeId] = {
+      id: routeId,
+      name: routeName,
+      kind: 'route',
+      file: route.file,
+      line: route.line,
+      signature: `${route.method} ${route.path} -> ${route.handler || 'anonymous'} [${route.framework}]`,
+    };
+
+    // Link route to its handler function
+    if (route.handler) {
+      const handlerNode = Object.values(nodes).find(
+        n => n.name === route.handler && (n.kind === 'function' || n.kind === 'method')
+      );
+      if (handlerNode) {
+        edges.push({ from: routeId, to: handlerNode.id, type: 'call' });
+      }
+    }
+
+    // Routes are entry points
+    entryPointIds.push(routeId);
+  }
+
   // Call graph edges
   for (const [caller, callees] of callGraph.entries()) {
     const callerId = Object.values(nodes).find(n =>
@@ -322,6 +415,7 @@ function buildFlowGraph(
 async function buildProjectMap(
   functions: FunctionEntry[],
   classes: ClassEntry[],
+  routes: RouteEntry[],
   entryPoints: string[]
 ): Promise<void> {
   let content = '# Project Map\n\nAuto-generated unified structure for LLM understanding.\n\n';
@@ -331,6 +425,15 @@ async function buildProjectMap(
     content += `- ${ep}\n`;
   }
   content += '\n';
+
+  // Routes section
+  if (routes.length > 0) {
+    content += '## Routes\n\n';
+    for (const route of routes) {
+      content += formatRouteEntry(route) + '\n';
+    }
+    content += '\n';
+  }
 
   content += '## Modules\n\n';
   const modules = new Map<string, { functions: number; classes: number; files: Set<string> }>();
@@ -411,6 +514,29 @@ async function rebuildFunctionsFile(functions: FunctionEntry[]): Promise<void> {
   await writeMemoryFile(MEMORY_FILES.FUNCTIONS, content);
 }
 
+async function rebuildDataStructuresFile(dataStructures: DataStructureEntry[]): Promise<void> {
+  const byFile = new Map<string, DataStructureEntry[]>();
+  for (const ds of dataStructures) {
+    const existing = byFile.get(ds.file) || [];
+    existing.push(ds);
+    byFile.set(ds.file, existing);
+  }
+
+  let content = '# Data Structures\n\nAuto-generated type/interface/enum/struct index with cross-references.\n\n';
+
+  const sortedFiles = Array.from(byFile.keys()).sort();
+
+  for (const filepath of sortedFiles) {
+    const entries = byFile.get(filepath)!;
+    content += `## ${filepath}\n\n`;
+    for (const ds of entries) {
+      content += formatDataStructureEntry(ds) + '\n';
+    }
+  }
+
+  await writeMemoryFile(MEMORY_FILES.DATASTRUCTURE, content);
+}
+
 async function updateDiscovery(directories: string[]): Promise<void> {
   let content = await readMemoryFile(MEMORY_FILES.DISCOVERY);
 
@@ -459,6 +585,11 @@ async function updateArchitecture(files: string[]): Promise<void> {
   }
 
   content += '\n## Patterns\n\n(Add project-specific patterns here)\n';
+
+  content += '\n## Project Context\n\n';
+  content += '### Vision\n> (Use agento_memory { action: "context" } to set project vision)\n\n';
+  content += '### Conventions\n> (Use agento_memory { action: "context" } to set coding conventions)\n\n';
+  content += '### Known Issues\n- (Use agento_memory { action: "context" } to track known issues)\n';
 
   await writeMemoryFile(MEMORY_FILES.ARCHITECTURE, content);
 }

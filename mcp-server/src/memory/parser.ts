@@ -11,7 +11,13 @@ import type {
   ClassEntry,
   MethodEntry,
   DuplicateResult,
+  ExtractionPattern,
+  DataStructureEntry,
+  RouteEntry,
+  PatternCategory,
 } from '../types.js';
+import { DEFAULT_PATTERNS } from '../patterns.js';
+import * as path from 'path';
 
 // ─── Common method names that should NEVER trigger duplicate warnings ─────────
 const COMMON_METHOD_NAMES = new Set([
@@ -97,6 +103,47 @@ function findClassBoundaries(lines: string[]): ClassBoundary[] {
   return boundaries;
 }
 
+// ─── Dynamic pattern system ──────────────────────────────────────────────────
+
+/**
+ * Merge default patterns with config patterns, filter by extension & category,
+ * sort by priority descending, and compile regex strings to RegExp.
+ */
+export function getApplicablePatterns(
+  fileExtension: string,
+  category: PatternCategory | null,
+  configPatterns: ExtractionPattern[] = [],
+): { pattern: ExtractionPattern; compiled: RegExp }[] {
+  // Build merged map: config overrides defaults by ID
+  const merged = new Map<string, ExtractionPattern>();
+  for (const p of DEFAULT_PATTERNS) {
+    merged.set(p.id, p);
+  }
+  for (const p of configPatterns) {
+    merged.set(p.id, p);
+  }
+
+  const results: { pattern: ExtractionPattern; compiled: RegExp }[] = [];
+
+  for (const p of merged.values()) {
+    if (!p.enabled) continue;
+    if (category && p.category !== category) continue;
+    if (p.fileExtensions.length > 0 && !p.fileExtensions.includes(fileExtension)) continue;
+
+    try {
+      const compiled = new RegExp(p.regex, p.flags);
+      results.push({ pattern: p, compiled });
+    } catch {
+      // Invalid regex — skip silently
+    }
+  }
+
+  // Sort by priority descending (higher = checked first)
+  results.sort((a, b) => (b.pattern.priority || 0) - (a.pattern.priority || 0));
+
+  return results;
+}
+
 // ─── Parse FUNCTIONS.md ───────────────────────────────────────────────────────
 
 /**
@@ -145,6 +192,153 @@ export function formatFunctionEntry(entry: FunctionEntry): string {
     ? ` [L1:${entry.dependencies.join(',')}]`
     : '';
   return `F:${entry.name}(${entry.params}):${entry.returnType}${classTag}${deps}`;
+}
+
+// ─── Parse DATASTRUCTURE.md ─────────────────────────────────────────────────
+
+/**
+ * Parse DATASTRUCTURE.md into structured entries
+ * Format:
+ *   ## filepath
+ *   DS:Name [kind] @ line N
+ *   Fields:
+ *   - fieldName: fieldType
+ *   Used by: func1, func2
+ */
+export function parseDataStructures(content: string): DataStructureEntry[] {
+  const entries: DataStructureEntry[] = [];
+  const lines = content.split('\n');
+  let currentFile = '';
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (line.startsWith('## ')) {
+      currentFile = line.slice(3).trim();
+      i++;
+      continue;
+    }
+
+    const dsMatch = line.match(/^DS:(\w+)\s+\[(\w+)\]\s+@\s+line\s+(\d+)(?:\s+extends\s+(\w+))?(?:\s+\{(\w+)\})?/);
+    if (dsMatch && currentFile) {
+      const entry: DataStructureEntry = {
+        name: dsMatch[1],
+        file: currentFile,
+        line: parseInt(dsMatch[3], 10),
+        kind: dsMatch[2],
+        extends: dsMatch[4] || undefined,
+        body: '',
+        fields: [],
+        patternId: dsMatch[5] || '',
+        usedBy: [],
+      };
+
+      i++;
+
+      // Read body (code block)
+      if (i < lines.length && lines[i]?.startsWith('```')) {
+        i++;
+        const bodyLines: string[] = [];
+        while (i < lines.length && !lines[i].startsWith('```')) {
+          bodyLines.push(lines[i]);
+          i++;
+        }
+        entry.body = bodyLines.join('\n');
+        if (i < lines.length) i++; // skip closing ```
+      }
+
+      // Read fields
+      if (i < lines.length && lines[i]?.startsWith('Fields:')) {
+        i++;
+        while (i < lines.length && lines[i]?.startsWith('- ')) {
+          const fieldMatch = lines[i].match(/^-\s+(\w+):\s*(.+)/);
+          if (fieldMatch) {
+            entry.fields.push({ name: fieldMatch[1], type: fieldMatch[2].trim() });
+          }
+          i++;
+        }
+      }
+
+      // Read usedBy
+      if (i < lines.length && lines[i]?.startsWith('Used by:')) {
+        const usedByStr = lines[i].slice('Used by:'.length).trim();
+        entry.usedBy = usedByStr.split(',').map(s => s.trim()).filter(Boolean);
+        i++;
+      }
+
+      entries.push(entry);
+      continue;
+    }
+
+    i++;
+  }
+
+  return entries;
+}
+
+/**
+ * Format a DataStructureEntry for DATASTRUCTURE.md
+ */
+export function formatDataStructureEntry(entry: DataStructureEntry): string {
+  const ext = entry.extends ? ` extends ${entry.extends}` : '';
+  const pid = entry.patternId ? ` {${entry.patternId}}` : '';
+  let out = `DS:${entry.name} [${entry.kind}] @ line ${entry.line}${ext}${pid}\n`;
+
+  if (entry.body) {
+    out += '```\n' + entry.body + '\n```\n';
+  }
+
+  if (entry.fields.length > 0) {
+    out += 'Fields:\n';
+    for (const f of entry.fields) {
+      out += `- ${f.name}: ${f.type}\n`;
+    }
+  }
+
+  if (entry.usedBy.length > 0) {
+    out += `Used by: ${entry.usedBy.join(', ')}\n`;
+  }
+
+  return out;
+}
+
+// ─── Parse routes from PROJECT_MAP.md ────────────────────────────────────────
+
+/**
+ * Parse route entries from the ## Routes section of PROJECT_MAP.md
+ * Format: RT: METHOD /path -> handler @ file:line [framework]
+ */
+export function parseRoutes(content: string): RouteEntry[] {
+  const entries: RouteEntry[] = [];
+  const lines = content.split('\n');
+
+  for (const line of lines) {
+    const rtMatch = line.match(
+      /^RT:\s+(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\s+(\S+)\s+->\s+(\w+)\s+@\s+([^:]+):(\d+)\s+\[(\w+)\]/i
+    );
+    if (rtMatch) {
+      entries.push({
+        method: rtMatch[1].toUpperCase(),
+        path: rtMatch[2],
+        handler: rtMatch[3],
+        file: rtMatch[4],
+        line: parseInt(rtMatch[5], 10),
+        framework: rtMatch[6],
+        patternId: '',
+      });
+    }
+  }
+
+  return entries;
+}
+
+/**
+ * Format a RouteEntry for PROJECT_MAP.md
+ */
+export function formatRouteEntry(entry: RouteEntry): string {
+  const handler = entry.handler || 'anonymous';
+  return `RT: ${entry.method.toUpperCase()} ${entry.path} -> ${handler} @ ${entry.file}:${entry.line} [${entry.framework}]`;
 }
 
 // ─── Rules parsing ────────────────────────────────────────────────────────────
@@ -261,42 +455,48 @@ export function parseDiscovery(content: string): Set<string> {
   return explored;
 }
 
-// ─── Function extraction (class-aware) ────────────────────────────────────────
+// ─── Function extraction (class-aware, dynamic patterns) ──────────────────────
 
 /**
  * Extract functions from source code with class context.
+ * Uses dynamic patterns merged from defaults + config.
  * Methods inside class bodies get className and parentClass populated.
  */
-export function extractFunctionsFromCode(code: string, filepath: string): FunctionEntry[] {
+export function extractFunctionsFromCode(
+  code: string,
+  filepath: string,
+  configPatterns: ExtractionPattern[] = [],
+): FunctionEntry[] {
   const entries: FunctionEntry[] = [];
   const lines = code.split('\n');
   const boundaries = findClassBoundaries(lines);
+  const ext = path.extname(filepath).toLowerCase();
 
-  const patterns = [
-    // function name(params): return
-    /(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*\(([^)]*)\)(?:\s*:\s*(\S+))?/,
-    // const name = (params): return =>
-    /(?:export\s+)?const\s+(\w+)\s*=\s*(?:async\s+)?\(([^)]*)\)(?:\s*:\s*(\S+))?\s*=>/,
-    // name(params): return { (method in class body)
-    /^\s*(?:public\s+|private\s+|protected\s+)?(?:static\s+)?(?:async\s+)?(\w+)\s*\(([^)]*)\)(?:\s*:\s*(\S+))?\s*\{/,
-    // Python: def name(params) -> return:
-    /def\s+(\w+)\s*\(([^)]*)\)(?:\s*->\s*(\S+))?:/,
-    // PHP: function name(params): return
-    /(?:public|private|protected)?\s*function\s+(\w+)\s*\(([^)]*)\)(?:\s*:\s*(\S+))?/,
-  ];
+  // Get applicable function + hook patterns
+  const fnPatterns = getApplicablePatterns(ext, 'function', configPatterns);
+  const hookPatterns = getApplicablePatterns(ext, 'hook', configPatterns);
+  const allPatterns = [...hookPatterns, ...fnPatterns]; // hooks checked first (higher priority)
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    for (const pattern of patterns) {
-      const match = line.match(pattern);
+    for (const { pattern: p, compiled } of allPatterns) {
+      const match = line.match(compiled);
       if (match) {
+        // Use first non-undefined capture group for name (hook patterns use group 1 or 2)
+        const nameIdx = p.captures.name;
+        const rawName = match[nameIdx] || match[nameIdx + 1];
+        if (!rawName) break; // no name captured
+
+        const paramsIdx = p.captures.params;
+        const retIdx = p.captures.returnType;
+
         const entry: FunctionEntry = {
-          name: match[1],
+          name: rawName,
           file: filepath,
           line: i + 1,
-          params: match[2]?.trim() || '',
-          returnType: match[3]?.trim() || 'void',
+          params: (paramsIdx ? match[paramsIdx]?.trim() : '') || '',
+          returnType: (retIdx ? match[retIdx]?.trim() : '') || 'void',
           dependencies: [],
         };
 
@@ -310,6 +510,212 @@ export function extractFunctionsFromCode(code: string, filepath: string): Functi
         entries.push(entry);
         break;
       }
+    }
+  }
+
+  return entries;
+}
+
+// ─── Data structure extraction ───────────────────────────────────────────────
+
+/**
+ * Extract data structures (interfaces, types, enums, structs, etc.) from source code.
+ * Uses dynamic patterns to detect definition start, then extracts body via
+ * brace-depth tracking (for { } languages) or indent tracking (for Python).
+ */
+export function extractDataStructuresFromCode(
+  code: string,
+  filepath: string,
+  configPatterns: ExtractionPattern[] = [],
+): DataStructureEntry[] {
+  const entries: DataStructureEntry[] = [];
+  const lines = code.split('\n');
+  const ext = path.extname(filepath).toLowerCase();
+  const isPython = ext === '.py';
+
+  const dsPatterns = getApplicablePatterns(ext, 'datastructure', configPatterns);
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    for (const { pattern: p, compiled } of dsPatterns) {
+      const match = line.match(compiled);
+      if (!match) continue;
+
+      const nameIdx = p.captures.name;
+      const name = match[nameIdx];
+      if (!name) continue;
+
+      const parentIdx = p.captures.parentName;
+      const parentName = parentIdx ? match[parentIdx] : undefined;
+
+      // Determine kind from pattern ID
+      let kind = 'unknown';
+      const idLower = p.id.toLowerCase();
+      if (idLower.includes('interface')) kind = 'interface';
+      else if (idLower.includes('type')) kind = 'type';
+      else if (idLower.includes('enum')) kind = 'enum';
+      else if (idLower.includes('struct')) kind = 'struct';
+      else if (idLower.includes('record')) kind = 'record';
+      else if (idLower.includes('dataclass') || idLower.includes('pydantic') || idLower.includes('model')) kind = 'model';
+      else kind = p.category;
+
+      // Extract body
+      let body = '';
+      const fields: Array<{ name: string; type: string }> = [];
+
+      if (isPython) {
+        // Python: indent-based body extraction
+        const baseIndent = (line.match(/^(\s*)/)?.[1].length) || 0;
+        const bodyLines: string[] = [line];
+        let j = i + 1;
+        while (j < lines.length) {
+          if (!lines[j].trim()) { bodyLines.push(''); j++; continue; }
+          const indent = (lines[j].match(/^(\s*)/)?.[1].length) || 0;
+          if (indent <= baseIndent) break;
+          bodyLines.push(lines[j]);
+          // Extract Python fields: name: Type or name = value
+          const fieldMatch = lines[j].match(/^\s+(\w+)\s*:\s*(\S+)/);
+          if (fieldMatch) {
+            fields.push({ name: fieldMatch[1], type: fieldMatch[2] });
+          }
+          j++;
+        }
+        body = bodyLines.join('\n');
+      } else {
+        // Brace-based body extraction
+        let braceDepth = 0;
+        let started = false;
+        const bodyLines: string[] = [];
+
+        for (let j = i; j < lines.length; j++) {
+          bodyLines.push(lines[j]);
+          for (const char of lines[j]) {
+            if (char === '{') { braceDepth++; started = true; }
+            else if (char === '}') { braceDepth--; }
+          }
+          if (started && braceDepth === 0) break;
+          // Safety: don't go beyond 200 lines for a single definition
+          if (j - i > 200) break;
+        }
+        body = bodyLines.join('\n');
+
+        // Extract fields from body (TS/JS interface/type fields)
+        for (const bodyLine of bodyLines) {
+          // TS: fieldName: Type; or fieldName?: Type;
+          const tsField = bodyLine.match(/^\s+(\w+)\??\s*:\s*([^;=]+)/);
+          if (tsField) {
+            fields.push({ name: tsField[1], type: tsField[2].trim().replace(/[,;]$/, '') });
+          }
+          // Go struct: FieldName Type `json:"..."`
+          if (ext === '.go') {
+            const goField = bodyLine.match(/^\s+(\w+)\s+(\S+)/);
+            if (goField && goField[1][0] === goField[1][0].toUpperCase()) {
+              fields.push({ name: goField[1], type: goField[2] });
+            }
+          }
+          // Rust struct: pub field_name: Type,
+          if (ext === '.rs') {
+            const rsField = bodyLine.match(/^\s+(?:pub\s+)?(\w+)\s*:\s*([^,]+)/);
+            if (rsField) {
+              fields.push({ name: rsField[1], type: rsField[2].trim() });
+            }
+          }
+        }
+      }
+
+      entries.push({
+        name,
+        file: filepath,
+        line: i + 1,
+        kind,
+        extends: parentName || undefined,
+        body,
+        fields,
+        patternId: p.id,
+        usedBy: [],
+      });
+
+      break; // Only one pattern match per line
+    }
+  }
+
+  return entries;
+}
+
+// ─── Route extraction ────────────────────────────────────────────────────────
+
+/**
+ * Extract route definitions from source code.
+ * Uses dynamic patterns to detect route registrations.
+ * Looks ahead for handler function name when not captured by the pattern.
+ */
+export function extractRoutesFromCode(
+  code: string,
+  filepath: string,
+  configPatterns: ExtractionPattern[] = [],
+): RouteEntry[] {
+  const entries: RouteEntry[] = [];
+  const lines = code.split('\n');
+  const ext = path.extname(filepath).toLowerCase();
+
+  const rtPatterns = getApplicablePatterns(ext, 'route', configPatterns);
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    for (const { pattern: p, compiled } of rtPatterns) {
+      const match = line.match(compiled);
+      if (!match) continue;
+
+      const methodIdx = p.captures.method;
+      const pathIdx = p.captures.path;
+
+      const method = (methodIdx ? match[methodIdx] : 'GET')?.toUpperCase() || 'GET';
+      const routePath = (pathIdx ? match[pathIdx] : '') || '/';
+
+      // Try to find handler function name
+      let handler: string | undefined;
+
+      // Look for handler in the same line: ..., handlerName) or ..., handlerName,
+      const handlerMatch = line.match(/,\s*(\w+)\s*[),]/);
+      if (handlerMatch) {
+        handler = handlerMatch[1];
+      }
+
+      // For decorator-style routes (FastAPI, NestJS, Flask), look at next line for function
+      if (!handler && (line.trim().startsWith('@') || line.trim().startsWith('export'))) {
+        for (let j = i + 1; j < Math.min(i + 3, lines.length); j++) {
+          const nextFunc = lines[j].match(/(?:async\s+)?(?:def|function)\s+(\w+)/);
+          if (nextFunc) {
+            handler = nextFunc[1];
+            break;
+          }
+          // NestJS: method name before (
+          const nextMethod = lines[j].match(/^\s*(?:async\s+)?(\w+)\s*\(/);
+          if (nextMethod) {
+            handler = nextMethod[1];
+            break;
+          }
+        }
+      }
+
+      // For Next.js API routes, the method IS the handler name
+      if (!handler && p.framework === 'nextjs') {
+        handler = method;
+      }
+
+      entries.push({
+        method,
+        path: routePath,
+        handler,
+        file: filepath,
+        line: i + 1,
+        framework: p.framework || 'unknown',
+        patternId: p.id,
+      });
+
+      break;
     }
   }
 
@@ -595,4 +1001,29 @@ export function extractCallGraph(
   }
 
   return callMap;
+}
+
+// ─── Cross-referencing: type → function linking ──────────────────────────────
+
+/**
+ * For each DataStructureEntry, scan all function signatures for references
+ * to the type name. Populates the `usedBy` field.
+ */
+export function crossReferenceTypes(
+  dataStructures: DataStructureEntry[],
+  functions: FunctionEntry[],
+): void {
+  for (const ds of dataStructures) {
+    const typeName = ds.name;
+    const usedBy: string[] = [];
+
+    for (const func of functions) {
+      // Check params and return type for references to this type
+      if (func.params.includes(typeName) || func.returnType.includes(typeName)) {
+        usedBy.push(func.name);
+      }
+    }
+
+    ds.usedBy = usedBy;
+  }
 }

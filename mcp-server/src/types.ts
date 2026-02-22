@@ -2,7 +2,55 @@
  * AgentO MCP Server Type Definitions
  */
 
-// Memory file types
+// ─── Pattern system types ────────────────────────────────────────────────────
+
+export type PatternCategory = 'function' | 'class' | 'datastructure' | 'route' | 'constant' | 'decorator' | 'hook';
+
+export interface ExtractionPattern {
+  id: string;                    // e.g., "fn-js-arrow", "rt-express-get"
+  description: string;           // Human readable
+  category: PatternCategory;
+  regex: string;                 // JSON-serializable string (not RegExp)
+  flags: string;                 // e.g., "" or "i"
+  captures: {                    // Which capture groups map to what
+    name: number;                // Required: group index for symbol name
+    params?: number;
+    returnType?: number;
+    parentName?: number;         // For extends/parent
+    path?: number;               // For route path
+    method?: number;             // For HTTP method
+  };
+  fileExtensions: string[];      // e.g., [".ts", ".tsx"] — empty = all
+  source: 'default' | 'discovered' | 'user';
+  enabled: boolean;
+  framework?: string;            // e.g., "express", "nestjs"
+  priority?: number;             // Higher = checked first (default 0)
+}
+
+export interface DataStructureEntry {
+  name: string;
+  file: string;
+  line: number;
+  kind: string;                  // interface | type | enum | struct | model | record
+  extends?: string;
+  body: string;                  // Raw source of the definition
+  fields: Array<{ name: string; type: string; description?: string }>;
+  patternId: string;             // Which pattern found this
+  usedBy: string[];              // Cross-ref: function names that reference this type
+}
+
+export interface RouteEntry {
+  method: string;                // GET, POST, etc.
+  path: string;                  // /api/users/:id
+  handler?: string;              // Handler function name
+  file: string;
+  line: number;
+  framework: string;
+  patternId: string;
+}
+
+// ─── Memory file types ───────────────────────────────────────────────────────
+
 export interface FunctionEntry {
   name: string;
   file: string;
@@ -72,7 +120,7 @@ export interface DuplicateResult {
 export interface SymbolNode {
   id: string;
   name: string;
-  kind: 'function' | 'method' | 'class';
+  kind: 'function' | 'method' | 'class' | 'route' | 'datastructure';
   file: string;
   line?: number;
   signature?: string;
@@ -81,7 +129,7 @@ export interface SymbolNode {
 export interface FlowEdge {
   from: string;
   to: string;
-  type: 'call' | 'import' | 'extend' | 'implement';
+  type: 'call' | 'import' | 'extend' | 'implement' | 'uses';
 }
 
 export interface FlowGraph {
@@ -109,7 +157,7 @@ export interface BashInput {
 
 export interface MemoryInput {
   file: string;
-  action: 'read' | 'write' | 'append' | 'init';
+  action: 'read' | 'write' | 'append' | 'init' | 'context';
   content?: string;
 }
 
@@ -142,7 +190,7 @@ export interface SymbolInput {
   ids?: string[];
   name?: string;
   file?: string;
-  kind?: 'function' | 'method' | 'class';
+  kind?: 'function' | 'method' | 'class' | 'route' | 'datastructure';
   limit?: number;
 }
 
@@ -154,6 +202,14 @@ export interface EntryPointsInput {
 export interface IndexInput {
   path?: string;
   force?: boolean;
+}
+
+export interface PatternsInput {
+  action: 'list' | 'add' | 'remove' | 'test' | 'suggest' | 'approve' | 'reject';
+  category?: PatternCategory;
+  id?: string;
+  pattern?: Partial<ExtractionPattern>;
+  testCode?: string;
 }
 
 export interface ConfigInput {
@@ -236,7 +292,9 @@ export interface AgentOConfig {
   autoIndex: boolean;
   autoMemoryUpdate: boolean;
   deferIndex: boolean;
-  [key: string]: string | number | boolean;
+  patterns: ExtractionPattern[];
+  language?: string;
+  [key: string]: string | number | boolean | ExtractionPattern[] | undefined;
 }
 
 // Tool result type
@@ -270,4 +328,5 @@ export const DEFAULT_CONFIG: AgentOConfig = {
   autoIndex: true,
   autoMemoryUpdate: true,
   deferIndex: true,
+  patterns: [],
 };

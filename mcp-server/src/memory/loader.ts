@@ -182,7 +182,7 @@ export async function initializeMemoryFiles(): Promise<void> {
     [MEMORY_FILES.ATTEMPTS]: '# Attempted Actions\n\n## Blocked Patterns\n\n',
     [MEMORY_FILES.ERRORS]: '# Known Errors & Solutions\n\n',
     [MEMORY_FILES.VERSIONS]: '# Dependency Versions\n\n',
-    [MEMORY_FILES.DATASTRUCTURE]: '# Data Structures\n\n## Schemas\n\n## API Contracts\n\n',
+    [MEMORY_FILES.DATASTRUCTURE]: '# Data Structures\n\nAuto-generated type/interface/enum/struct index with cross-references.\n\n(Run /AgentO:index to populate)\n\n',
     [MEMORY_FILES.PROJECT_MAP]: '# Project Map\n\nAuto-generated project structure and symbol index.\n\n',
   };
   

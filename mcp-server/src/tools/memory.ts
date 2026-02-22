@@ -25,8 +25,8 @@ export const memoryToolDef = {
       },
       action: {
         type: 'string',
-        enum: ['read', 'write', 'append', 'init'],
-        description: 'Action to perform',
+        enum: ['read', 'write', 'append', 'init', 'context'],
+        description: 'Action to perform. Use "context" to update the Project Context section in ARCHITECTURE.md.',
       },
       content: {
         type: 'string',
@@ -38,9 +38,88 @@ export const memoryToolDef = {
 };
 
 export async function handleMemory(args: unknown) {
-  const input = args as MemoryInput & { action: 'read' | 'write' | 'append' | 'init' };
+  const input = args as MemoryInput;
   const { file, action, content } = input;
-  
+
+  // Special case: context action — update Project Context section in ARCHITECTURE.md
+  if (action === 'context') {
+    if (!content) {
+      return {
+        content: [{ type: 'text', text: '❌ Missing content for context action. Provide key:value like "vision: My project is..." or "conventions: Use camelCase..."' }],
+        isError: true,
+      };
+    }
+    try {
+      const targetFile = file?.toUpperCase() === 'ARCHITECTURE' ? MEMORY_FILES.ARCHITECTURE : MEMORY_FILES.ARCHITECTURE;
+      let archContent = await readMemoryFile(targetFile);
+
+      if (!archContent) {
+        archContent = '# Project Architecture\n\n## Project Context\n\n';
+      }
+
+      // Ensure ## Project Context section exists
+      if (!archContent.includes('## Project Context')) {
+        archContent = archContent.trimEnd() + '\n\n## Project Context\n\n';
+      }
+
+      // Parse the content key: value
+      const colonIdx = content.indexOf(':');
+      if (colonIdx < 0) {
+        // Append as-is to Project Context section
+        const insertPoint = archContent.indexOf('## Project Context');
+        const sectionEnd = archContent.indexOf('\n## ', insertPoint + 1);
+        const endIdx = sectionEnd > 0 ? sectionEnd : archContent.length;
+        archContent = archContent.slice(0, endIdx).trimEnd() + '\n' + content + '\n' + archContent.slice(endIdx);
+      } else {
+        const key = content.slice(0, colonIdx).trim().toLowerCase();
+        const value = content.slice(colonIdx + 1).trim();
+
+        // Map known keys to subsection headers
+        const sectionMap: Record<string, string> = {
+          vision: '### Vision',
+          conventions: '### Conventions',
+          issues: '### Known Issues',
+          notes: '### Notes',
+        };
+        const header = sectionMap[key] || `### ${key.charAt(0).toUpperCase() + key.slice(1)}`;
+
+        // Replace or add subsection
+        const headerIdx = archContent.indexOf(header);
+        if (headerIdx >= 0) {
+          // Find next ### or ## to determine section end
+          const nextHeader = archContent.indexOf('\n###', headerIdx + header.length);
+          const nextSection = archContent.indexOf('\n## ', headerIdx + header.length);
+          let endIdx: number;
+          if (nextHeader > 0 && (nextSection < 0 || nextHeader < nextSection)) {
+            endIdx = nextHeader;
+          } else if (nextSection > 0) {
+            endIdx = nextSection;
+          } else {
+            endIdx = archContent.length;
+          }
+          archContent = archContent.slice(0, headerIdx) + `${header}\n> ${value}\n` + archContent.slice(endIdx);
+        } else {
+          // Add new subsection at end of Project Context
+          const ctxIdx = archContent.indexOf('## Project Context');
+          const nextSection = archContent.indexOf('\n## ', ctxIdx + 1);
+          const endIdx = nextSection > 0 ? nextSection : archContent.length;
+          archContent = archContent.slice(0, endIdx).trimEnd() + `\n\n${header}\n> ${value}\n` + archContent.slice(endIdx);
+        }
+      }
+
+      await writeMemoryFile(targetFile, archContent);
+      return {
+        content: [{ type: 'text', text: `✅ Project context updated in ARCHITECTURE.md` }],
+      };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      return {
+        content: [{ type: 'text', text: `❌ Context update failed: ${errorMsg}` }],
+        isError: true,
+      };
+    }
+  }
+
   // Special case: init action
   if (action === 'init') {
     try {
