@@ -1,12 +1,14 @@
 # @ilam/agento-mcp
 
-**MCP server for the [AgentO Claude Code plugin](https://github.com/ilampirai/AgentO).** This package is automatically registered when you install the AgentO plugin. See the [GitHub repository](https://github.com/ilampirai/AgentO) for full documentation and installation instructions.
+**MCP server for [AgentO](https://github.com/ilampirai/AgentO) — code intelligence, enforcement, and decision tracking for Claude Code.**
 
-## Quick Start
+[![npm](https://img.shields.io/npm/v/@ilam/agento-mcp)](https://www.npmjs.com/package/@ilam/agento-mcp)
 
-**For most users:** Install the [AgentO plugin](https://github.com/ilampirai/AgentO) -- this MCP server is included automatically.
+## Setup
 
-**Manual setup:** Add to your project's `.mcp.json`:
+**Plugin users:** This package is auto-registered when you install the [AgentO plugin](https://github.com/ilampirai/AgentO).
+
+**Standalone:** Add to `.mcp.json`:
 
 ```json
 {
@@ -19,58 +21,56 @@
 }
 ```
 
-Then run `/agento:init` in Claude Code.
-
-## Tools
+## Tools (15)
 
 | Tool | Purpose |
 |------|---------|
-| `agento_write` | Write files with rule enforcement |
-| `agento_read` | Read files with auto-indexing |
-| `agento_bash` | Execute commands safely |
-| `agento_search` | Smart codebase search with memory integration |
-| `agento_memory` | Direct memory file access and project context |
-| `agento_rules` | Manage project rules |
-| `agento_functions` | Query function index |
-| `agento_index` | Index codebase (functions, classes, data structures, routes, flow graph) |
-| `agento_config` | Configuration |
-| `agento_entrypoints` | Find entry points for features |
-| `agento_flow` | Get call graph subgraphs |
-| `agento_symbol` | Lookup function/class details |
-| `agento_patterns` | Manage extraction patterns (list, add, remove, test, suggest) |
+| `agento_write` | Write with rule enforcement + decision/flow conflict checks |
+| `agento_read` | Read with discovery tracking |
+| `agento_bash` | Safe command execution |
+| `agento_search` | Memory-first codebase search |
+| `agento_memory` | Memory I/O, session resume, flat→layered migration |
+| `agento_rules` | Project rule CRUD |
+| `agento_functions` | Function index queries |
+| `agento_index` | Index: functions, classes, types, routes, flow graph |
+| `agento_config` | Config + memory health status |
+| `agento_entrypoints` | Feature-based entry point discovery |
+| `agento_flow` | Call graph subgraphs + flow protection |
+| `agento_symbol` | Symbol lookup by name or ID |
+| `agento_patterns` | Extraction pattern management (25 built-in, 8 languages) |
+| `agento_decide` | Architectural decision tracking (record/query/check/list/why) |
+| `agento_compact` | Memory compaction (analyze/propose/approve/reject/status) |
 
-## Features
+## v6.0 Features
 
-- **Rule enforcement** - User-defined rules checked on every write
-- **Duplicate detection** - Warns on similar function signatures
-- **Dynamic pattern system** - 25 built-in extraction patterns for 8 languages
-- **Data structure extraction** - Interfaces, types, enums, structs, models
-- **Route extraction** - Express, FastAPI, Flask, NestJS, Next.js, Gin
-- **Cross-referencing** - Links types to the functions that use them
-- **Flow graph** - Full call graph with efficient subgraph queries
-- **Auto-indexing** - Function index updated automatically
-- **Test runner** - Auto-detects Playwright, Jest, pytest, PHPUnit
+- **4-layer memory hierarchy** — soul / core / working / surface
+- **Decision tracking** — record decisions with rationale, detect conflicts before writes
+- **Flow protection** — define critical paths, block unsafe edits
+- **Session resume** — load briefing at start, snapshot at end, branch switching
+- **Memory compaction** — promote observations to core, archive stale entries
+- **Claude Code hooks** — PreToolUse flow gate, PostToolUse observation logger
+- **Rule enforcement** — user-defined rules checked on every write
+- **Dynamic patterns** — 25 built-in extraction patterns, AI-discoverable
+- **Flow graph** — full call graph with efficient subgraph queries
+- **Cross-referencing** — links types ↔ functions ↔ routes
 
-## Memory Files
+## Memory Structure
 
-Creates `.agenticMemory/` in your project:
-
-| File | Purpose |
-|------|---------|
-| `FUNCTIONS.md` | Function signatures and dependencies |
-| `PROJECT_MAP.md` | Project structure, modules, routes |
-| `FLOW_GRAPH.json` | Call graph with symbol IDs |
-| `DATASTRUCTURE.md` | Interfaces, types, enums, structs with cross-references |
-| `RULES.md` | User-defined rules |
-| `ARCHITECTURE.md` | Project structure and context |
-| `DISCOVERY.md` | Explored areas |
-| `ATTEMPTS.md` | Failed actions |
-| `config.json` | Settings and custom patterns |
+```
+.agenticMemory/
+├── soul/        IDENTITY.md, PRINCIPLES.md
+├── core/        DECISIONS.md, FLOWS.md, shadow indexes (.json)
+├── working/     ACTIVE_CONTEXT.md, DISCOVERY.md, ATTEMPTS.md
+├── surface/     FUNCTIONS.md, DATASTRUCTURE.md, PROJECT_MAP.md, FLOW_GRAPH.json
+├── config.json
+└── RULES.md
+```
 
 ## Links
 
-- [AgentO Plugin](https://github.com/ilampirai/AgentO)
-- [Documentation](https://github.com/ilampirai/AgentO#readme)
+- [AgentO Plugin & Docs](https://github.com/ilampirai/AgentO)
+- [Hooks Setup](https://github.com/ilampirai/AgentO/blob/main/mcp-server/docs/hooks-setup.md)
+- [npm](https://www.npmjs.com/package/@ilam/agento-mcp)
 
 ## License
 

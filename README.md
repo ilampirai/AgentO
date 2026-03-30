@@ -1,58 +1,33 @@
-# AgentO v5.2.1
+# AgentO v6.0
 
-**MCP-based code quality enforcement and intelligent code understanding for Claude Code.**
+**MCP-based code intelligence, enforcement, and decision tracking for Claude Code.**
 
-AgentO provides hard enforcement of code quality rules at the tool level. Unlike soft prompt-based approaches, AgentO's MCP server intercepts all file operations and enforces rules automatically. The indexer extracts functions, data structures, routes, and builds a full flow graph for efficient code navigation.
+AgentO intercepts all file operations through its MCP server — enforcing rules, tracking architectural decisions, protecting critical flows, and maintaining a 4-layer memory hierarchy that persists across sessions.
 
-## Dependency
+[![npm](https://img.shields.io/npm/v/@ilam/agento-mcp)](https://www.npmjs.com/package/@ilam/agento-mcp)
 
-- **MCP Server:** [`@ilam/agento-mcp`](https://www.npmjs.com/package/@ilam/agento-mcp) (auto-installed with plugin)
+## What's New in v6.0
 
-## Features
-
-- **Hard Enforcement** - Rules enforced at tool level, not suggestions
-- **Auto Tool Routing** - `.claude/rules/` ensures AgentO tools are always used
-- **User Rules** - Add custom rules via `/agento:rules`
-- **Duplicate Detection** - Warns on similar function signatures
-- **Auto-Indexing** - Function index updated on every read/write
-- **Test Runner** - Auto-detects Playwright, Jest, pytest, PHPUnit
-- **Fix Loops** - Iterate until tests pass
-- **Flow Graph Tools** - Code understanding with 90% token savings
-  - `agento_entrypoints` - Find entry points for features
-  - `agento_flow` - Get call graph subgraphs
-  - `agento_symbol` - Lookup function/class details
-- **Dynamic Pattern System (v5.2)** - Self-improving extraction patterns
-  - 25 built-in patterns covering JS/TS, Python, PHP, Go, Rust, Java
-  - Data structure extraction (interfaces, types, enums, structs, models)
-  - Route extraction (Express, FastAPI, Flask, NestJS, Next.js, Gin)
-  - Cross-referencing between types and functions
-  - AI-discoverable patterns with test/suggest/approve lifecycle
+- **4-Layer Memory** — soul/core/working/surface hierarchy with session resume
+- **Decision Tracking** — record, query, and enforce architectural decisions
+- **Flow Protection** — define critical paths, block unsafe edits, verify integrity
+- **Memory Compaction** — auto-detect stale observations, propose promotions/archives
+- **Branch Context** — per-branch working state with seamless switching
+- **Claude Code Hooks** — PreToolUse flow gates + PostToolUse observation logging
 
 ## Installation
 
-### From Marketplace (Recommended)
-
 ```bash
+# Marketplace (recommended)
 claude plugin marketplace add ilampirai/AgentO
 claude plugin install AgentO
-```
 
-**That's it.** The MCP server (`@ilam/agento-mcp`) is auto-registered.
-
-### Local Installation
-
-```bash
+# Manual
 git clone https://github.com/ilampirai/AgentO.git
 claude plugin install "path/to/AgentO"
 ```
 
-To update a local installation:
-
-```bash
-cd path/to/AgentO
-git pull
-claude plugin install "path/to/AgentO"
-```
+The MCP server ([`@ilam/agento-mcp`](https://www.npmjs.com/package/@ilam/agento-mcp)) is auto-registered.
 
 ## Quick Start
 
@@ -60,178 +35,137 @@ claude plugin install "path/to/AgentO"
 /agento:init
 ```
 
-This creates:
-- `.claude/rules/agento-tools.md` - Forces AgentO tool usage
-- `.agenticMemory/` - Memory files
+Creates `.claude/rules/agento-tools.md` and `.agenticMemory/` with the full layered structure.
 
-Then prompt normally (no prefix needed):
-
-```
-"Build a login page"
-"Fix the authentication bug"
-"Run tests and fix any failures"
-```
-
-The `.claude/rules/` file ensures AgentO tools are used for all prompts automatically.
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `/agento:init` | Initialize AgentO in project |
-| `/agento:rules` | Manage project rules |
-| `/agento:functions` | Query function index |
-| `/agento:index` | Index the codebase (generates flow graph, data structures, routes) |
-| `/agento:loop` | Start fix iteration loop |
-| `/agento:test` | Run tests with retry |
-| `/agento:status` | Show AgentO status |
-| `/agento:config` | View/edit configuration |
-| `/agento:flow` | Use flow graph tools |
-| `/agento:symbol` | Lookup symbol details |
-
-## MCP Tools
+## MCP Tools (15)
 
 | Tool | Purpose |
 |------|---------|
-| `agento_write` | Write file with rule enforcement |
-| `agento_read` | Read file with tracking |
-| `agento_bash` | Execute command safely |
-| `agento_search` | Smart codebase search with memory integration |
-| `agento_memory` | Direct memory file access (includes `context` action for project vision) |
-| `agento_rules` | CRUD for rules |
+| `agento_write` | Write with rule enforcement, decision/flow conflict checks, `force` override |
+| `agento_read` | Read with discovery tracking |
+| `agento_bash` | Safe command execution |
+| `agento_search` | Memory-first codebase search |
+| `agento_memory` | Memory I/O + session resume + migration |
+| `agento_rules` | CRUD for project rules |
 | `agento_functions` | Query function index |
-| `agento_index` | Index codebase (functions, classes, data structures, routes, flow graph) |
-| `agento_config` | Configuration |
-| `agento_entrypoints` | Find entry points for features (e.g., "auth", "cart") |
-| `agento_flow` | Get call graph subgraph for specific functions |
+| `agento_index` | Full indexer: functions, classes, types, routes, flow graph |
+| `agento_config` | Configuration + memory health status |
+| `agento_entrypoints` | Find entry points by feature name |
+| `agento_flow` | Call graph subgraphs + flow protection (define/check/verify/list/update) |
 | `agento_symbol` | Lookup function/class details by name or ID |
-| `agento_patterns` | Manage extraction patterns (list, add, remove, test, suggest) |
+| `agento_patterns` | Manage extraction patterns (25 built-in, 8 languages) |
+| `agento_decide` | Record/query/check/list decisions + explain constraints (`why`) |
+| `agento_compact` | Analyze/propose/approve/reject memory compaction |
 
-## Memory Files
+## Memory Hierarchy
 
-AgentO stores all state in `.agenticMemory/`:
+```
+.agenticMemory/
+├── soul/                  # Never changes
+│   ├── IDENTITY.md        # Project name, description, tech stack
+│   └── PRINCIPLES.md      # Engineering & design principles
+├── core/                  # Changes rarely
+│   ├── DECISIONS.md       # Architectural decisions with rationale
+│   ├── FLOWS.md           # Protected critical flows
+│   ├── .decisions.json    # Shadow index (fast parsing)
+│   └── .flows.json        # Shadow index
+├── working/               # Changes often
+│   ├── ACTIVE_CONTEXT.md  # Current session state, observations
+│   ├── DISCOVERY.md       # Explored areas
+│   └── ATTEMPTS.md        # Failed actions
+├── surface/               # Auto-generated
+│   ├── FUNCTIONS.md       # Function signatures + dependencies
+│   ├── DATASTRUCTURE.md   # Interfaces, types, enums, structs
+│   ├── PROJECT_MAP.md     # Modules, classes, routes
+│   ├── FLOW_GRAPH.json    # Full call graph
+│   ├── ERRORS.md          # Known errors + solutions
+│   └── VERSIONS.md        # Dependency versions
+├── .branch-context/       # Per-branch session state
+├── .archive/              # Compacted observations
+├── config.json            # Settings
+└── RULES.md               # User-defined rules
+```
 
-| File | Purpose |
-|------|---------|
-| `FUNCTIONS.md` | Function signatures and dependencies |
-| `PROJECT_MAP.md` | Unified project structure, modules, routes |
-| `FLOW_GRAPH.json` | Full call graph with symbol IDs |
-| `DATASTRUCTURE.md` | Interfaces, types, enums, structs with cross-references |
-| `RULES.md` | User-defined rules |
-| `ARCHITECTURE.md` | Project structure and context |
-| `DISCOVERY.md` | Explored areas |
-| `ATTEMPTS.md` | Failed actions (blocked patterns) |
-| `ERRORS.md` | Known errors and solutions |
-| `VERSIONS.md` | Dependency versions |
-| `config.json` | Settings and custom extraction patterns |
+## Key Workflows
+
+### Session Resume
+```
+agento_memory { action: "resume", resume_action: "start" }   # Load briefing
+agento_memory { action: "resume", resume_action: "end" }     # Snapshot state
+```
+
+### Decision Tracking
+```
+agento_decide { action: "record", decision: "Use JWT", affected_files: ["auth.ts"] }
+agento_decide { action: "check", target_files: ["auth.ts"] }
+agento_decide { action: "why", file: "auth.ts" }
+```
+
+### Flow Protection
+```
+agento_flow { protect_action: "define", flow_name: "Auth", files: ["auth.ts", "session.ts"] }
+agento_flow { protect_action: "check", target_file: "auth.ts" }
+```
+
+### Write with Conflict Detection
+```
+agento_write { path: "auth.ts", content: "..." }         # Blocked if conflicts
+agento_write { path: "auth.ts", content: "...", force: true }  # Override + log
+```
+
+### Code Understanding (90% token savings)
+```
+agento_entrypoints { query: "auth" }        # Find entry points
+agento_flow { ids: [...], depth: 2 }        # Get call graph (500 tokens)
+agento_symbol { name: "getUser" }           # Function details
+```
 
 ## Configuration
 
-```
-/agento:config set lineLimit 400
-/agento:config set strictMode false
-```
-
 | Setting | Default | Description |
 |---------|---------|-------------|
-| lineLimit | 0 (unlimited) | Max lines per file (0 = no limit) |
-| strictMode | true | Block vs warn on violations |
+| strictMode | true | Block vs warn on rule violations |
 | autoIndex | true | Auto-index on read/write |
-| autoMemoryUpdate | true | Auto-update memory files |
-| deferIndex | true | Defer indexing to explicit `agento_index` calls |
+| deferIndex | true | Defer indexing to explicit calls |
+| memory.compactionTTLDays | 14 | Days before observations go stale |
+| memory.maxDecisionsLoaded | 10 | Decisions included in session briefing |
+| memory.tokenBudgetWarn | 8000 | Token budget warning threshold |
+| memory.autoContextOnWrite | true | Log writes to ACTIVE_CONTEXT |
 
-## Adding Rules
+## Pattern System
 
-```
-/agento:rules add "no console.log" --pattern no-console --action BLOCK
-/agento:rules add "no inline styles" --pattern no-inline-css --files "*.html" --action WARN
-```
+25 built-in patterns covering:
+- **Functions:** JS/TS, Python, PHP, Go, Rust, Java
+- **Data Structures:** interfaces, types, enums, structs, models, dataclasses
+- **Routes:** Express, FastAPI, Flask, NestJS, Next.js, Gin
+- **Hooks:** React custom hooks
 
-Built-in patterns:
-- `no-inline-css` - No `<style>` or `style=""`
-- `no-console` - No `console.log`
-- `no-any` - No TypeScript `any`
-- Custom string - Blocks if content contains it
+AI-discoverable patterns with test/suggest/approve lifecycle.
 
-## Dynamic Pattern System
+## Claude Code Hooks
 
-AgentO v5.2 introduces a dynamic extraction pattern system. The indexer uses configurable regex patterns to extract functions, data structures, and routes from source code.
+Optional hard-gate enforcement via Claude Code hooks:
 
-### Default Coverage
+| Hook | Trigger | Action |
+|------|---------|--------|
+| `pre-write-check.sh` | PreToolUse (Write) | Blocks native Write if file is in protected flow |
+| `post-change-review.sh` | PostToolUse (Write/Edit) | Logs file changes to ACTIVE_CONTEXT |
 
-- **Functions:** JS/TS (function, arrow, method), Python (def), PHP, Go (func), Rust (fn), Java
-- **Data Structures:** TS (interface, type, enum), Python (dataclass, Pydantic), Go (struct), Rust (struct/enum), Java (record)
-- **Routes:** Express, FastAPI, Flask, NestJS, Next.js API routes, Gin
-- **Hooks:** React custom hooks (use*)
-
-### Managing Patterns
-
-```
-agento_patterns { action: "list" }
-agento_patterns { action: "list", category: "route" }
-agento_patterns { action: "test", pattern: { regex: "...", captures: { name: 1 } }, testCode: "..." }
-agento_patterns { action: "add", pattern: { id: "my-pattern", ... } }
-agento_patterns { action: "remove", id: "my-pattern" }
-```
-
-AI can discover new patterns during indexing and propose them via `suggest`. Discovered patterns require explicit `approve` before activation.
-
-### Project Context
-
-Set project vision and conventions in ARCHITECTURE.md:
-
-```
-agento_memory { action: "context", content: "vision: TradeBook is a real-time trading platform" }
-agento_memory { action: "context", content: "conventions: Use camelCase, prefer composition over inheritance" }
-```
-
-## Flow Graph Workflow
-
-```
-User: "Add authentication"
-
-1. agento_entrypoints {query: "auth"}    -- Find entry point IDs
-2. agento_flow {ids: [...], depth: 2}    -- Get call graph (500 tokens)
-3. agento_symbol {ids: [...]}            -- Get function details
-4. agento_read {path: "..."}             -- Read only needed files
-```
-
-This workflow uses 500-1000 tokens instead of reading the entire codebase (10k+).
-
-## Architecture
-
-```
-User Prompt
-     |
-Claude (Default)
-     |
-AgentO MCP Server
-|-- agento_write    -> Checks rules -> Marks dirty
-|-- agento_read     -> Updates DISCOVERY.md
-|-- agento_bash     -> Checks ATTEMPTS.md
-|-- agento_search   -> Memory-first search -> Updates DISCOVERY.md
-|-- agento_index    -> Extracts functions, classes, data structures, routes
-|                      Builds flow graph, cross-references types
-|-- agento_patterns -> Manages extraction patterns
-|-- agento_test     -> Auto-detects framework
-     |
-Memory Files (.agenticMemory/)
-```
+See [`docs/hooks-setup.md`](mcp-server/docs/hooks-setup.md) for installation.
 
 ## Migration
 
-### v5.1 to v5.2
+### v5.x → v6.0
 
-1. Run `/agento:index` to populate `DATASTRUCTURE.md` and route data in `PROJECT_MAP.md`
-2. Existing memory files are preserved
-3. `config.json` gains a `patterns` array (empty by default, defaults are in code)
-4. `lineLimit` default is now 0 (unlimited); define constraints via `/agento:rules`
+```
+agento_memory { action: "migrate" }
+```
 
-### v4.0 to v5.x
+Atomic copy-first migration: moves files to layered structure, generates `IDENTITY.md` from `package.json` + README, creates `DECISIONS.md`, `FLOWS.md`, `PRINCIPLES.md`, `ACTIVE_CONTEXT.md`.
 
-1. Run `/agento:index` to generate `PROJECT_MAP.md` and `FLOW_GRAPH.json`
-2. Use flow graph tools for code understanding
-3. All existing memory files are preserved
+### v4.x → v5.x → v6.0
+
+Run migrate, then `agento_index { force: true }` to rebuild all indexes.
 
 ## License
 
