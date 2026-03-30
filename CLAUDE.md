@@ -1,81 +1,119 @@
-# AgentO v5.0 - Enhanced Code Understanding
+# AgentO v6.0 - Memory Hierarchy + Decision Tracking
 
 When user runs `/agento <prompt>`, use ONLY AgentO MCP tools:
 
 | Operation | Use |
 |-----------|-----|
-| Write | `agento_write` |
+| Write | `agento_write` (with force flag for overrides) |
 | Read | `agento_read` |
 | Commands | `agento_bash` |
 | Search | `agento_search` |
 | **Index codebase** | `agento_index` |
-| **Get flow graph** | `agento_flow` |
+| **Get flow graph** | `agento_flow` (also: flow protection) |
 | **Lookup symbols** | `agento_symbol` |
 | **Find entry points** | `agento_entrypoints` |
+| **Track decisions** | `agento_decide` |
+| **Compact memory** | `agento_compact` |
 
 Do NOT use built-in Write, Read, Bash, Grep, or Glob for `/agento` prompts.
 
-## 🧠 Code Understanding Workflow (CRITICAL)
+## Session Start (CRITICAL)
+
+**Every session MUST begin with:**
+```
+agento_memory { action: "resume", resume_action: "start" }
+```
+This loads the session briefing from all memory layers (soul → core → working → surface).
+
+**Every session SHOULD end with:**
+```
+agento_memory { action: "resume", resume_action: "end", summary: "What was accomplished" }
+```
+
+## Memory Layers
+
+| Layer | Purpose | Files |
+|-------|---------|-------|
+| **Soul** | Project identity & principles (never changes) | `soul/IDENTITY.md`, `soul/PRINCIPLES.md` |
+| **Core** | Decisions & protected flows (changes rarely) | `core/DECISIONS.md`, `core/FLOWS.md` |
+| **Working** | Active context & observations (changes often) | `working/ACTIVE_CONTEXT.md`, `working/DISCOVERY.md` |
+| **Surface** | Code index (auto-generated) | `surface/FUNCTIONS.md`, `surface/PROJECT_MAP.md` |
+
+## Decision Tracking
+
+Before making architectural choices, check existing decisions:
+```
+agento_decide { action: "check", target_files: ["path/to/file.ts"] }
+```
+
+After making a decision, record it:
+```
+agento_decide { action: "record", decision: "Use JWT for auth", alternatives: [{option: "Sessions", rejected_reason: "Stateless preferred"}], affected_files: ["auth/login.ts"] }
+```
+
+To understand why constraints exist:
+```
+agento_decide { action: "why", file: "auth/login.ts" }
+```
+
+## Flow Protection
+
+Protected flows prevent accidental breakage of critical paths.
+
+Define a flow:
+```
+agento_flow { protect_action: "define", flow_name: "Auth Flow", description: "Login to session", steps: ["validate", "hash", "check-db", "create-session"], files: ["auth/login.ts", "auth/session.ts"] }
+```
+
+Check before editing:
+```
+agento_flow { protect_action: "check", target_file: "auth/login.ts" }
+```
+
+## Write Tool (Updated)
+
+`agento_write` now checks decisions and flows before writing:
+- If conflicts found: returns report, **does not write**
+- To override: `agento_write { path: "...", content: "...", force: true }`
+- Force writes are logged as observations in ACTIVE_CONTEXT.md
+
+## Memory Compaction
+
+When observations accumulate (>10), compact:
+```
+agento_compact { action: "analyze" }   → See staleness
+agento_compact { action: "propose" }   → Generate proposal
+agento_compact { action: "approve" }   → Execute compaction
+```
+
+## Code Understanding Workflow
 
 **BEFORE writing or modifying code, ALWAYS:**
 
-1. **Understand the codebase structure:**
-   - First, check if `.agenticMemory/PROJECT_MAP.md` exists
-   - If not, run `agento_index` to generate it
-   - Read `PROJECT_MAP.md` to understand modules, classes, and entry points
+1. **Start session** with `agento_memory { action: "resume", resume_action: "start" }`
+2. **Understand the codebase**: Check `PROJECT_MAP.md`, use `agento_entrypoints`, `agento_flow`
+3. **Check constraints**: `agento_decide { action: "check", target_files: [...] }`
+4. **Write with enforcement**: `agento_write { path: "...", content: "..." }`
+5. **Record decisions**: `agento_decide { action: "record", ... }` for significant choices
 
-2. **For feature requests (e.g., "add auth", "implement cart"):**
-   - Use `agento_entrypoints` with the feature name (e.g., `agento_entrypoints {query: "auth"}`)
-   - This returns relevant entry point IDs
-   - Then use `agento_flow` with those IDs to get the call graph
-   - Example: `agento_flow {ids: ["F123", "F456"], depth: 2, direction: "both"}`
+## Fallback Workflow
 
-3. **When you need function/class details:**
-   - Use `agento_symbol` instead of reading files directly
-   - Example: `agento_symbol {name: "getUser", kind: "function"}`
-   - This returns file, line, signature, and dependencies in minimal tokens
+If you cannot find a function/symbol:
+1. `agento_index { force: true }` — reindex
+2. Try `agento_symbol` or `agento_entrypoints` again
+3. Use `agento_search` as last resort
 
-4. **⚠️ FALLBACK WORKFLOW (MANDATORY):**
-   If you cannot find a function/symbol you're looking for:
-   
-   **Step 1**: Run `agento_index {force: true}` to reindex the codebase
-   - This updates PROJECT_MAP.md and FLOW_GRAPH.json with latest code
-   
-   **Step 2**: Try again with `agento_symbol` or `agento_entrypoints`
-   - The function might have been added since last index
-   
-   **Step 3**: If still not found, use your thinking ability and search tools:
-   - Use `agento_search` to search the codebase for the function name
-   - Use codebase search to find where it might be defined
-   - Read relevant files with `agento_read` to locate it
-   
-   **NEVER skip the reindex step** - it's critical for finding recently added code.
+## Branch Context
 
-5. **Why this matters:**
-   - **Token efficiency**: Flow graph tools return only relevant subgraphs (100-500 tokens vs 10k+ tokens)
-   - **Faster understanding**: No need to read multiple files to understand relationships
-   - **Accurate navigation**: Call graph shows exactly what calls what
-
-## 📋 Memory Files Usage
-
-Always check these files FIRST before reading code:
-
-- `.agenticMemory/PROJECT_MAP.md` - Overview of modules, classes, entry points
-- `.agenticMemory/FUNCTIONS.md` - All function signatures
-- `.agenticMemory/FLOW_GRAPH.json` - Full call graph (use tools, don't read directly)
-- `.agenticMemory/ARCHITECTURE.md` - Project structure
-- `.agenticMemory/RULES.md` - Project rules (enforced automatically)
-
-## 🔄 Typical Workflow
-
+When switching branches:
 ```
-User: "Add authentication to the app"
-
-1. agento_entrypoints {query: "auth"} → Get entry point IDs
-2. agento_flow {ids: [...], depth: 2} → Get relevant call graph
-3. agento_symbol {ids: [...]} → Get function details
-4. agento_read {path: "relevant-file.ts"} → Read only what's needed
-5. agento_write {path: "...", content: "..."} → Write with rule enforcement
+agento_memory { action: "resume", resume_action: "switch_branch", branch: "feature/new-feature" }
 ```
 
-This workflow uses ~500-1000 tokens instead of reading entire codebase (10k+ tokens).
+## Migration (from v5.x)
+
+If using an older flat `.agenticMemory/` layout:
+```
+agento_memory { action: "migrate" }
+```
+This moves files to the layered structure and generates IDENTITY.md.

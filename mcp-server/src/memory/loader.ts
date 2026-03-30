@@ -9,6 +9,7 @@ import * as os from 'os';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { MEMORY_FILES } from '../types.js';
+import { LAYER_DIRS, resolveMemoryPath } from './resolver.js';
 import type { EnvironmentInfo } from '../types.js';
 
 const execAsync = promisify(exec);
@@ -23,6 +24,19 @@ export async function ensureMemoryDir(): Promise<void> {
     await fs.mkdir(MEMORY_DIR, { recursive: true });
   } catch {
     // Directory already exists
+  }
+}
+
+/**
+ * Ensure all layered directories exist (soul/, core/, working/, surface/, etc.)
+ */
+export async function ensureLayeredDirs(): Promise<void> {
+  for (const dir of LAYER_DIRS) {
+    try {
+      await fs.mkdir(dir, { recursive: true });
+    } catch {
+      // Already exists
+    }
   }
 }
 
@@ -173,7 +187,8 @@ export async function getFileStats(filepath: string): Promise<{ lines: number; s
  */
 export async function initializeMemoryFiles(): Promise<void> {
   await ensureMemoryDir();
-  
+  await ensureLayeredDirs();
+
   const templates: Record<string, string> = {
     [MEMORY_FILES.FUNCTIONS]: '# Functions Index\n\nAuto-generated function signatures with dependencies.\n\n',
     [MEMORY_FILES.RULES]: '# Project Rules\n\n## User Rules\n\nNo rules defined. Use /AgentO:rules to add project-specific rules.\n\n',
@@ -184,6 +199,12 @@ export async function initializeMemoryFiles(): Promise<void> {
     [MEMORY_FILES.VERSIONS]: '# Dependency Versions\n\n',
     [MEMORY_FILES.DATASTRUCTURE]: '# Data Structures\n\nAuto-generated type/interface/enum/struct index with cross-references.\n\n(Run /AgentO:index to populate)\n\n',
     [MEMORY_FILES.PROJECT_MAP]: '# Project Map\n\nAuto-generated project structure and symbol index.\n\n',
+    // v6.0 layered files
+    [resolveMemoryPath('IDENTITY')]: '# Project Identity\n\n(Auto-generated on first init. Edit to describe your project.)\n',
+    [resolveMemoryPath('PRINCIPLES')]: '# Project Principles\n\n## Engineering Principles\n\n## Design Principles\n',
+    [resolveMemoryPath('DECISIONS')]: '# Decisions\n\nTracked decisions with rationale and alternatives.\n',
+    [resolveMemoryPath('FLOWS')]: '# Protected Flows\n\nDefined critical flows that require review before modification.\n',
+    [resolveMemoryPath('ACTIVE_CONTEXT')]: '# Active Context\n\n## Current Work\n\n## Observations\n',
   };
   
   for (const [file, content] of Object.entries(templates)) {

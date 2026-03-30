@@ -140,10 +140,62 @@ export interface FlowGraph {
   entryPoints: string[];
 }
 
+// ─── Memory v6.0 types ──────────────────────────────────────────────────────
+
+export interface DecisionEntry {
+  id: string;
+  timestamp: string;
+  decision: string;
+  alternatives: Array<{ option: string; rejected_reason: string }>;
+  affected_flows: string[];
+  affected_files: string[];
+  confidence: number;
+  branch?: string;
+  override_of?: string;
+}
+
+export interface FlowProtectionEntry {
+  id: string;
+  name: string;
+  description: string;
+  steps: string[];
+  files: string[];
+  last_verified?: string;
+}
+
+export interface ObservationEntry {
+  timestamp: string;
+  type: 'WRITE_OVERRIDE' | 'NEW_FILE' | 'REPEATED_DECISION' | 'FLOW_CHECK';
+  content: string;
+  references?: string[];
+}
+
+export interface BranchContext {
+  branch: string;
+  base_branch: string;
+  created: string;
+  last_session: string;
+  active_context: {
+    working_on: string;
+    recent_changes: string[];
+    open_questions: string[];
+    decisions_made_on_branch: string[];
+  };
+}
+
+export interface MemoryConfig {
+  compactionTTLDays: number;
+  maxDecisionsLoaded: number;
+  maxDecisionsStored: number;
+  tokenBudgetWarn: number;
+  autoContextOnWrite: boolean;
+}
+
 // Tool input types
 export interface WriteInput {
   path: string;
   content: string;
+  force?: boolean;
 }
 
 export interface ReadInput {
@@ -156,9 +208,12 @@ export interface BashInput {
 }
 
 export interface MemoryInput {
-  file: string;
-  action: 'read' | 'write' | 'append' | 'init' | 'context';
+  file?: string;
+  action: 'read' | 'write' | 'append' | 'init' | 'context' | 'resume' | 'migrate';
   content?: string;
+  resume_action?: 'start' | 'end' | 'switch_branch';
+  branch?: string;
+  summary?: string;
 }
 
 export interface RulesInput {
@@ -178,12 +233,19 @@ export interface FunctionsInput {
 }
 
 export interface FlowInput {
-  ids: string[];
+  ids?: string[];
   depth?: number;
   direction?: 'in' | 'out' | 'both';
   maxNodes?: number;
   maxEdges?: number;
   includeUnresolved?: boolean;
+  protect_action?: 'define' | 'check' | 'verify' | 'list' | 'update';
+  flow_name?: string;
+  description?: string;
+  steps?: string[];
+  files?: string[];
+  target_file?: string;
+  flow_id?: string;
 }
 
 export interface SymbolInput {
@@ -225,6 +287,27 @@ export interface SearchInput {
   include?: string;
   exclude?: string;
   maxResults?: number;
+}
+
+export interface DecideInput {
+  action: 'record' | 'query' | 'check' | 'list' | 'why';
+  decision?: string;
+  alternatives?: Array<{ option: string; rejected_reason: string }>;
+  affected_flows?: string[];
+  affected_files?: string[];
+  confidence?: number;
+  question?: string;
+  target_files?: string[];
+  filter?: string;
+  limit?: number;
+  file?: string;
+  symbol?: string;
+}
+
+export interface CompactInput {
+  action: 'analyze' | 'propose' | 'approve' | 'reject' | 'status';
+  proposal_id?: string;
+  reject_reason?: string;
 }
 
 // Environment type (detected during init)
@@ -287,14 +370,14 @@ export interface EnvironmentInfo {
 
 // Config type
 export interface AgentOConfig {
-  lineLimit: number;
   strictMode: boolean;
   autoIndex: boolean;
   autoMemoryUpdate: boolean;
   deferIndex: boolean;
   patterns: ExtractionPattern[];
+  memory: MemoryConfig;
   language?: string;
-  [key: string]: string | number | boolean | ExtractionPattern[] | undefined;
+  [key: string]: string | number | boolean | ExtractionPattern[] | MemoryConfig | undefined;
 }
 
 // Tool result type
@@ -305,28 +388,35 @@ export interface ToolResult {
   error?: string;
 }
 
-// Memory file paths
+// DEPRECATED: Use resolveMemoryPath() from memory/resolver.ts for new code.
+// Kept for backward compat during migration. Will be removed in v7.0.
 export const MEMORY_FILES = {
-  FUNCTIONS: '.agenticMemory/FUNCTIONS.md',
+  FUNCTIONS: '.agenticMemory/surface/FUNCTIONS.md',
   RULES: '.agenticMemory/RULES.md',
-  ARCHITECTURE: '.agenticMemory/ARCHITECTURE.md',
-  DISCOVERY: '.agenticMemory/DISCOVERY.md',
-  ATTEMPTS: '.agenticMemory/ATTEMPTS.md',
-  ERRORS: '.agenticMemory/ERRORS.md',
-  VERSIONS: '.agenticMemory/VERSIONS.md',
-  DATASTRUCTURE: '.agenticMemory/DATASTRUCTURE.md',
-  PROJECT_MAP: '.agenticMemory/PROJECT_MAP.md',
-  FLOW_GRAPH: '.agenticMemory/FLOW_GRAPH.json',
+  ARCHITECTURE: '.agenticMemory/core/ARCHITECTURE.md',
+  DISCOVERY: '.agenticMemory/working/DISCOVERY.md',
+  ATTEMPTS: '.agenticMemory/working/ATTEMPTS.md',
+  ERRORS: '.agenticMemory/surface/ERRORS.md',
+  VERSIONS: '.agenticMemory/surface/VERSIONS.md',
+  DATASTRUCTURE: '.agenticMemory/surface/DATASTRUCTURE.md',
+  PROJECT_MAP: '.agenticMemory/surface/PROJECT_MAP.md',
+  FLOW_GRAPH: '.agenticMemory/surface/FLOW_GRAPH.json',
   CONFIG: '.agenticMemory/config.json',
   DIRTY: '.agenticMemory/.dirty',
 } as const;
 
-// Default config - no line limit by default, user defines rules
+// Default config - user defines rules
 export const DEFAULT_CONFIG: AgentOConfig = {
-  lineLimit: 0,
   strictMode: true,
   autoIndex: true,
   autoMemoryUpdate: true,
   deferIndex: true,
   patterns: [],
+  memory: {
+    compactionTTLDays: 14,
+    maxDecisionsLoaded: 10,
+    maxDecisionsStored: 0,
+    tokenBudgetWarn: 8000,
+    autoContextOnWrite: true,
+  },
 };

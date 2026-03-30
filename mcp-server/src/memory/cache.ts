@@ -6,8 +6,9 @@
 import * as crypto from 'crypto';
 import { readMemoryFile, writeMemoryFile, appendMemoryFile, ensureMemoryDir } from './loader.js';
 import { parseFunctions, parseRules, parseAttempts, parseDiscovery } from './parser.js';
-import type { FunctionEntry, RuleEntry, AttemptEntry, AgentOConfig } from '../types.js';
-import { MEMORY_FILES, DEFAULT_CONFIG } from '../types.js';
+import type { FunctionEntry, RuleEntry, AttemptEntry, AgentOConfig, DecisionEntry, FlowProtectionEntry } from '../types.js';
+import { DEFAULT_CONFIG } from '../types.js';
+import { resolveMemoryPath } from './resolver.js';
 
 interface CacheEntry<T> {
   data: T;
@@ -21,6 +22,8 @@ class MemoryCache {
   private attemptsCache: CacheEntry<AttemptEntry[]> | null = null;
   private discoveryCache: CacheEntry<Set<string>> | null = null;
   private configCache: CacheEntry<AgentOConfig> | null = null;
+  private decisionsCache: CacheEntry<DecisionEntry[]> | null = null;
+  private flowsCache: CacheEntry<FlowProtectionEntry[]> | null = null;
 
   // In-memory dirty file tracking (also persisted to .dirty file)
   private dirtyFiles: Set<string> = new Set();
@@ -30,7 +33,7 @@ class MemoryCache {
   }
 
   async getFunctions(): Promise<FunctionEntry[]> {
-    const content = await readMemoryFile(MEMORY_FILES.FUNCTIONS);
+    const content = await readMemoryFile(resolveMemoryPath('FUNCTIONS'));
     const hash = this.hashContent(content);
 
     if (this.functionsCache && this.functionsCache.hash === hash) {
@@ -43,7 +46,7 @@ class MemoryCache {
   }
 
   async getRules(): Promise<RuleEntry[]> {
-    const content = await readMemoryFile(MEMORY_FILES.RULES);
+    const content = await readMemoryFile(resolveMemoryPath('RULES'));
     const hash = this.hashContent(content);
 
     if (this.rulesCache && this.rulesCache.hash === hash) {
@@ -56,7 +59,7 @@ class MemoryCache {
   }
 
   async getAttempts(): Promise<AttemptEntry[]> {
-    const content = await readMemoryFile(MEMORY_FILES.ATTEMPTS);
+    const content = await readMemoryFile(resolveMemoryPath('ATTEMPTS'));
     const hash = this.hashContent(content);
 
     if (this.attemptsCache && this.attemptsCache.hash === hash) {
@@ -69,7 +72,7 @@ class MemoryCache {
   }
 
   async getDiscovery(): Promise<Set<string>> {
-    const content = await readMemoryFile(MEMORY_FILES.DISCOVERY);
+    const content = await readMemoryFile(resolveMemoryPath('DISCOVERY'));
     const hash = this.hashContent(content);
 
     if (this.discoveryCache && this.discoveryCache.hash === hash) {
@@ -82,7 +85,7 @@ class MemoryCache {
   }
 
   async getConfig(): Promise<AgentOConfig> {
-    const content = await readMemoryFile(MEMORY_FILES.CONFIG);
+    const content = await readMemoryFile(resolveMemoryPath('CONFIG'));
 
     if (!content) {
       return DEFAULT_CONFIG;
@@ -104,6 +107,44 @@ class MemoryCache {
     }
   }
 
+  async getDecisions(): Promise<DecisionEntry[]> {
+    const content = await readMemoryFile(resolveMemoryPath('DECISIONS_INDEX'));
+    if (!content) return [];
+
+    const hash = this.hashContent(content);
+
+    if (this.decisionsCache && this.decisionsCache.hash === hash) {
+      return this.decisionsCache.data;
+    }
+
+    try {
+      const data = JSON.parse(content) as DecisionEntry[];
+      this.decisionsCache = { data, hash, timestamp: Date.now() };
+      return data;
+    } catch {
+      return [];
+    }
+  }
+
+  async getFlows(): Promise<FlowProtectionEntry[]> {
+    const content = await readMemoryFile(resolveMemoryPath('FLOWS_INDEX'));
+    if (!content) return [];
+
+    const hash = this.hashContent(content);
+
+    if (this.flowsCache && this.flowsCache.hash === hash) {
+      return this.flowsCache.data;
+    }
+
+    try {
+      const data = JSON.parse(content) as FlowProtectionEntry[];
+      this.flowsCache = { data, hash, timestamp: Date.now() };
+      return data;
+    } catch {
+      return [];
+    }
+  }
+
   // ─── Dirty file tracking ─────────────────────────────────────────────────
 
   /**
@@ -115,7 +156,7 @@ class MemoryCache {
     this.dirtyFiles.add(filepath);
     try {
       await ensureMemoryDir();
-      await appendMemoryFile(MEMORY_FILES.DIRTY, filepath + '\n');
+      await appendMemoryFile(resolveMemoryPath('DIRTY'), filepath + '\n');
     } catch {
       // Non-fatal
     }
@@ -126,7 +167,7 @@ class MemoryCache {
    */
   async getDirtyFiles(): Promise<string[]> {
     try {
-      const content = await readMemoryFile(MEMORY_FILES.DIRTY);
+      const content = await readMemoryFile(resolveMemoryPath('DIRTY'));
       if (content) {
         const fromFile = content.split('\n').map(l => l.trim()).filter(Boolean);
         for (const f of fromFile) {
@@ -154,7 +195,7 @@ class MemoryCache {
   async clearDirty(): Promise<void> {
     this.dirtyFiles.clear();
     try {
-      await writeMemoryFile(MEMORY_FILES.DIRTY, '');
+      await writeMemoryFile(resolveMemoryPath('DIRTY'), '');
     } catch {
       // Non-fatal
     }
@@ -167,6 +208,8 @@ class MemoryCache {
   invalidateAttempts(): void { this.attemptsCache = null; }
   invalidateDiscovery(): void { this.discoveryCache = null; }
   invalidateConfig(): void { this.configCache = null; }
+  invalidateDecisions(): void { this.decisionsCache = null; }
+  invalidateFlows(): void { this.flowsCache = null; }
 
   clearAll(): void {
     this.functionsCache = null;
@@ -174,6 +217,8 @@ class MemoryCache {
     this.attemptsCache = null;
     this.discoveryCache = null;
     this.configCache = null;
+    this.decisionsCache = null;
+    this.flowsCache = null;
   }
 }
 

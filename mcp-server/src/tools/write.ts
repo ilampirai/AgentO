@@ -1,16 +1,20 @@
 /**
- * agento_write - Lean file writer
- * Enforces user rules, writes the file, marks dirty for deferred indexing.
+ * agento_write - Lean file writer with decision/flow protection
+ * Enforces user rules, checks decision conflicts and flow impact,
+ * writes the file, marks dirty for deferred indexing.
  * NO inline FUNCTIONS.md updates - that's handled by agento_index.
  */
 
 import { memoryCache } from '../memory/cache.js';
-import { writeProjectFile } from '../memory/loader.js';
+import { writeProjectFile, appendMemoryFile } from '../memory/loader.js';
+import { checkDecisionConflicts } from '../memory/decisions.js';
+import { checkFlowImpact } from '../memory/flows.js';
+import { resolveMemoryPath } from '../memory/resolver.js';
 import type { WriteInput } from '../types.js';
 
 export const writeToolDef = {
   name: 'agento_write',
-  description: 'Write a file with AgentO enforcement. Checks rules, line limits, duplicates before writing. Auto-updates FUNCTIONS.md after write.',
+  description: 'Write a file with AgentO enforcement. Checks rules, decision conflicts, and flow impact before writing. Use force:true to override conflicts.',
   inputSchema: {
     type: 'object' as const,
     properties: {
@@ -21,6 +25,10 @@ export const writeToolDef = {
       content: {
         type: 'string',
         description: 'Content to write',
+      },
+      force: {
+        type: 'boolean',
+        description: 'Force write even if conflicts detected (logs override)',
       },
     },
     required: ['path', 'content'],
@@ -43,14 +51,7 @@ export async function handleWrite(args: unknown) {
   const config = await memoryCache.getConfig();
   const lines = content.split('\n').length;
 
-  // PRE-CHECK 1: Line count (only if lineLimit > 0)
-  if (config.lineLimit > 0 && lines > config.lineLimit) {
-    violations.push(
-      `⛔ LINE LIMIT: ${lines} lines (max ${config.lineLimit}). Split into smaller modules.`
-    );
-  }
-
-  // PRE-CHECK 2: User-defined rules
+  // User-defined rules (line limits enforced via rules, not hardcoded)
   const rules = await memoryCache.getRules();
   for (const rule of rules) {
     if (!rule.enabled) continue;
@@ -86,8 +87,17 @@ export async function handleWrite(args: unknown) {
           message = 'Found "any" type';
         }
         break;
-      case 'max-lines':
-        break; // Handled by lineLimit config
+      case 'max-lines': {
+        const limitMatch = rule.pattern.match(/max-lines:(\d+)/);
+        if (limitMatch) {
+          const limit = parseInt(limitMatch[1], 10);
+          if (lines > limit) {
+            violated = true;
+            message = `File exceeds ${limit} lines (has ${lines})`;
+          }
+        }
+        break;
+      }
       default:
         if (rule.pattern && content.includes(rule.pattern)) {
           violated = true;
@@ -114,6 +124,50 @@ export async function handleWrite(args: unknown) {
     return { content: [{ type: 'text', text: response }], isError: true };
   }
 
+  // Decision + flow conflict check (only if not forcing)
+  if (!input.force) {
+    try {
+      const decisions = await memoryCache.getDecisions();
+      const conflicts = checkDecisionConflicts(path, decisions);
+      const flows = await memoryCache.getFlows();
+      const impacted = checkFlowImpact(path, flows);
+
+      if (conflicts.length > 0 || impacted.length > 0) {
+        let report = '⚠️ CONFLICTS DETECTED — file not written.\n\n';
+        if (conflicts.length) {
+          report += '### Decisions referencing this file:\n';
+          for (const d of conflicts) {
+            report += `- ${d.id}: ${d.decision}\n`;
+            if (d.alternatives.length) {
+              report += `  Alternatives rejected: ${d.alternatives.map(a => a.option).join(', ')}\n`;
+            }
+          }
+        }
+        if (impacted.length) {
+          report += '\n### Protected flows involving this file:\n';
+          for (const f of impacted) {
+            report += `- ${f.id}: ${f.name}\n  Steps: ${f.steps.join(' → ')}\n`;
+          }
+        }
+        report += '\nTo proceed: re-call agento_write with force: true';
+        return { content: [{ type: 'text', text: report }] };
+      }
+    } catch {
+      // Graceful degradation — skip checks if memory files missing
+    }
+  }
+
+  // If force=true, log override as observation
+  if (input.force) {
+    try {
+      const timestamp = new Date().toISOString();
+      await appendMemoryFile(
+        resolveMemoryPath('ACTIVE_CONTEXT'),
+        `\n- [${timestamp}] WRITE_OVERRIDE: Forced write to ${path}\n`
+      );
+    } catch { /* non-fatal */ }
+  }
+
   // WRITE the file
   try {
     await writeProjectFile(path, content);
@@ -127,6 +181,15 @@ export async function handleWrite(args: unknown) {
 
   // Mark file as dirty for deferred indexing
   await memoryCache.markDirty(path);
+
+  // Append richer summary to ACTIVE_CONTEXT.md
+  if (config.memory?.autoContextOnWrite) {
+    try {
+      const firstLine = content.split('\n').find(l => l.trim() && !l.startsWith('//') && !l.startsWith('/*')) || '';
+      const summary = `- Wrote ${path}: ${firstLine.trim().slice(0, 80)}`;
+      await appendMemoryFile(resolveMemoryPath('ACTIVE_CONTEXT'), '\n' + summary + '\n');
+    } catch { /* non-fatal */ }
+  }
 
   // Build concise response
   let response = `✅ File written: ${path} (${lines} lines)`;

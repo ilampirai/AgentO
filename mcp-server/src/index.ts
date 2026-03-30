@@ -27,11 +27,13 @@ import { handleFlow, flowToolDef } from './tools/flow.js';
 import { handleSymbol, symbolToolDef } from './tools/symbol.js';
 import { handleEntryPoints, entrypointsToolDef } from './tools/entrypoints.js';
 import { handlePatterns, patternsToolDef } from './tools/patterns.js';
+import { handleDecide, decideToolDef } from './tools/decide.js';
+import { handleCompact, compactToolDef } from './tools/compact.js';
 
 const server = new Server(
   {
     name: 'agento-mcp',
-    version: '5.0.0',
+    version: '6.0.0',
   },
   {
     capabilities: {
@@ -57,6 +59,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       symbolToolDef,
       entrypointsToolDef,
       patternsToolDef,
+      decideToolDef,
+      compactToolDef,
     ],
   };
 });
@@ -93,6 +97,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return await handleEntryPoints(args);
       case 'agento_patterns':
         return await handlePatterns(args);
+      case 'agento_decide':
+        return await handleDecide(args);
+      case 'agento_compact':
+        return await handleCompact(args);
       default:
         return {
           content: [

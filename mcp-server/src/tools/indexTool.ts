@@ -10,8 +10,10 @@ import {
   readProjectFile,
   readMemoryFile,
   writeMemoryFile,
-  writeJsonMemoryFile
+  writeJsonMemoryFile,
+  appendMemoryFile,
 } from '../memory/loader.js';
+import { resolveMemoryPath } from '../memory/resolver.js';
 import {
   extractFunctionsFromCode,
   extractClassesFromCode,
@@ -237,6 +239,48 @@ export async function handleIndex(args: unknown) {
       await memoryCache.clearDirty();
     }
 
+    // Post-index: flow verification + new file detection
+    let flowReport = '';
+    try {
+      const flows = await memoryCache.getFlows();
+      if (flows.length > 0) {
+        const { existsSync } = await import('fs');
+        const missingFiles: string[] = [];
+        for (const flow of flows) {
+          for (const file of flow.files) {
+            if (!existsSync(file)) {
+              missingFiles.push(`${flow.id}: ${file}`);
+            }
+          }
+        }
+        if (missingFiles.length) {
+          flowReport = `\n⚠️ Flow verification: ${missingFiles.length} missing file(s)\n${missingFiles.map(f => `  - ${f}`).join('\n')}\n`;
+        }
+
+        // Detect new files not in any flow or decision
+        const allFlowFiles = new Set(flows.flatMap(f => f.files));
+        const decisions = await memoryCache.getDecisions();
+        const allDecisionFiles = new Set(decisions.flatMap(d => d.affected_files));
+        const untrackedNew = newFiles.filter(f =>
+          !allFlowFiles.has(f) && !allDecisionFiles.has(f)
+        );
+        if (untrackedNew.length > 0 && untrackedNew.length <= 5) {
+          flowReport += `\n📌 New files not in any flow/decision: ${untrackedNew.join(', ')}\n`;
+        } else if (untrackedNew.length > 5) {
+          flowReport += `\n📌 ${untrackedNew.length} new files not tracked by any flow/decision\n`;
+        }
+
+        // Write summary to ACTIVE_CONTEXT
+        if (flowReport) {
+          const timestamp = new Date().toISOString();
+          await appendMemoryFile(
+            resolveMemoryPath('ACTIVE_CONTEXT'),
+            `\n- [${timestamp}] Index post-check: ${missingFiles.length} missing flow files, ${untrackedNew.length} untracked new files\n`
+          );
+        }
+      }
+    } catch { /* non-fatal */ }
+
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
 
     let output = `✅ **Indexing Complete** (${elapsed}s)\n\n`;
@@ -252,6 +296,10 @@ export async function handleIndex(args: unknown) {
       output += `\n📝 Indexed: ${newFiles.join(', ')}\n`;
     } else if (newFiles.length > 10) {
       output += `\n📝 Indexed ${newFiles.length} files\n`;
+    }
+
+    if (flowReport) {
+      output += flowReport;
     }
 
     return { content: [{ type: 'text', text: output }] };

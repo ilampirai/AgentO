@@ -3,15 +3,17 @@
  * Read, write, or append to any memory file
  */
 
-import { 
-  readMemoryFile, 
-  writeMemoryFile, 
+import {
+  readMemoryFile,
+  writeMemoryFile,
   appendMemoryFile,
-  initializeMemoryFiles 
+  initializeMemoryFiles
 } from '../memory/loader.js';
 import { memoryCache } from '../memory/cache.js';
 import { MEMORY_FILES } from '../types.js';
 import type { MemoryInput } from '../types.js';
+import { loadSessionBriefing, snapshotSession, switchBranch } from '../memory/resume.js';
+import { migrateToLayered } from '../memory/migrate.js';
 
 export const memoryToolDef = {
   name: 'agento_memory',
@@ -25,8 +27,21 @@ export const memoryToolDef = {
       },
       action: {
         type: 'string',
-        enum: ['read', 'write', 'append', 'init', 'context'],
-        description: 'Action to perform. Use "context" to update the Project Context section in ARCHITECTURE.md.',
+        enum: ['read', 'write', 'append', 'init', 'context', 'resume', 'migrate'],
+        description: 'Action: read/write/append memory files, init (create), context (update ARCHITECTURE.md), resume (session start/end/switch), migrate (flat to layered)',
+      },
+      resume_action: {
+        type: 'string',
+        enum: ['start', 'end', 'switch_branch'],
+        description: '[resume] Sub-action: start (load briefing), end (snapshot), switch_branch',
+      },
+      branch: {
+        type: 'string',
+        description: '[resume switch_branch] Target branch name',
+      },
+      summary: {
+        type: 'string',
+        description: '[resume end] Session summary',
       },
       content: {
         type: 'string',
@@ -115,6 +130,57 @@ export async function handleMemory(args: unknown) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       return {
         content: [{ type: 'text', text: `❌ Context update failed: ${errorMsg}` }],
+        isError: true,
+      };
+    }
+  }
+
+  // Resume action — session lifecycle
+  if (action === 'resume') {
+    try {
+      switch (input.resume_action) {
+        case 'start': {
+          const briefing = await loadSessionBriefing();
+          return { content: [{ type: 'text', text: briefing }] };
+        }
+        case 'end': {
+          const result = await snapshotSession(input.summary);
+          return { content: [{ type: 'text', text: result }] };
+        }
+        case 'switch_branch': {
+          if (!input.branch) {
+            return {
+              content: [{ type: 'text', text: '❌ Missing branch parameter for switch_branch' }],
+              isError: true,
+            };
+          }
+          const result = await switchBranch(input.branch);
+          return { content: [{ type: 'text', text: result }] };
+        }
+        default:
+          return {
+            content: [{ type: 'text', text: '❌ Missing resume_action. Use: start, end, switch_branch' }],
+            isError: true,
+          };
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      return {
+        content: [{ type: 'text', text: `❌ Resume failed: ${errorMsg}` }],
+        isError: true,
+      };
+    }
+  }
+
+  // Migrate action — flat to layered
+  if (action === 'migrate') {
+    try {
+      const result = await migrateToLayered();
+      return { content: [{ type: 'text', text: result }] };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      return {
+        content: [{ type: 'text', text: `❌ Migration failed: ${errorMsg}` }],
         isError: true,
       };
     }
