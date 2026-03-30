@@ -1,6 +1,6 @@
 {
   "name": "AgentO",
-  "version": "6.0.1",
+  "version": "6.0.2",
   "description": "MCP-based code intelligence, enforcement, and decision tracking for Claude Code. 4-layer memory hierarchy with flow protection.",
   "author": {
     "name": "ilampirai",

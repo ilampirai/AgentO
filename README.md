@@ -14,6 +14,7 @@ AgentO intercepts all file operations through its MCP server — enforcing rules
 - **Memory Compaction** — auto-detect stale observations, propose promotions/archives
 - **Branch Context** — per-branch working state with seamless switching
 - **Claude Code Hooks** — PreToolUse flow gates + PostToolUse observation logging
+- **Always-On Skill** — auto-activates when plugin is installed, teaches Claude the full memory-first workflow without requiring `/agento` prefix
 
 ## Installation
 
@@ -28,6 +29,19 @@ claude plugin install "path/to/AgentO"
 ```
 
 The MCP server ([`@ilam/agento-mcp`](https://www.npmjs.com/package/@ilam/agento-mcp)) is auto-registered.
+
+## Always-On Skill
+
+AgentO includes a **skill** (`skills/agento/SKILL.md`) that auto-activates when the plugin is installed. Unlike slash commands that require `/agento` prefix, the skill loads into Claude's context automatically and teaches the complete v6.0 workflow:
+
+- Session lifecycle (resume at start, snapshot at end)
+- Tool routing (agento_write instead of Write, etc.)
+- Decision checking before every write
+- Flow protection awareness
+- Code understanding via flow graph (90% token savings)
+- Memory compaction when observations accumulate
+
+**No configuration needed.** Install the plugin, and Claude uses AgentO's memory-first workflow on every prompt.
 
 ## Quick Start
 

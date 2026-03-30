@@ -53,6 +53,7 @@
 - **Dynamic patterns** — 25 built-in extraction patterns, AI-discoverable
 - **Flow graph** — full call graph with efficient subgraph queries
 - **Cross-referencing** — links types ↔ functions ↔ routes
+- **Always-on skill** — auto-activates when plugin is installed, teaches Claude the full workflow without `/agento` prefix
 
 ## Memory Structure
 
