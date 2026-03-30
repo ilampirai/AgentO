@@ -9,6 +9,7 @@ import {
   memoryFileExists,
   readMemoryFile
 } from '../memory/loader.js';
+import { resolveMemoryPath } from '../memory/resolver.js';
 import { MEMORY_FILES, DEFAULT_CONFIG } from '../types.js';
 import type { ConfigInput, AgentOConfig } from '../types.js';
 import { parseFunctions, parseRules, parseAttempts, parseDiscovery } from '../memory/parser.js';
@@ -194,14 +195,14 @@ export async function handleConfig(args: unknown) {
 
 async function getStatus() {
   let output = '📊 **AgentO Status**\n\n';
-  
+
   // Config
   const config = await memoryCache.getConfig();
   output += `⚙️ **Configuration**\n`;
-  output += `- Line limit: ${config.lineLimit}\n`;
   output += `- Strict mode: ${config.strictMode ? 'ON' : 'OFF'}\n`;
   output += `- Auto-index: ${config.autoIndex ? 'ON' : 'OFF'}\n`;
-  output += `- Auto memory update: ${config.autoMemoryUpdate ? 'ON' : 'OFF'}\n\n`;
+  output += `- Auto memory update: ${config.autoMemoryUpdate ? 'ON' : 'OFF'}\n`;
+  output += `- Deferred index: ${config.deferIndex ? 'ON' : 'OFF'}\n\n`;
   
   // Functions
   try {
@@ -261,12 +262,46 @@ async function getStatus() {
     MEMORY_FILES.VERSIONS,
     MEMORY_FILES.DATASTRUCTURE,
   ];
-  
+
   for (const file of memoryFiles) {
     const exists = await memoryFileExists(file);
     output += `- ${file}: ${exists ? '✅' : '❌'}\n`;
   }
-  
+
+  // Memory health (v6.0)
+  output += '\n🧠 **Memory Health**\n';
+  try {
+    const decisions = await memoryCache.getDecisions();
+    output += `- Decisions: ${decisions.length}\n`;
+  } catch {
+    output += `- Decisions: n/a\n`;
+  }
+  try {
+    const flows = await memoryCache.getFlows();
+    output += `- Protected flows: ${flows.length}\n`;
+  } catch {
+    output += `- Protected flows: n/a\n`;
+  }
+  try {
+    const context = await readMemoryFile(resolveMemoryPath('ACTIVE_CONTEXT'));
+    const tokens = Math.ceil(context.length / 4);
+    const budget = config.memory?.tokenBudgetWarn ?? 8000;
+    output += `- Working memory: ~${tokens} tokens${tokens > budget ? ' ⚠️ OVER BUDGET' : ''}\n`;
+  } catch {
+    output += `- Working memory: n/a\n`;
+  }
+
+  const isDirty = await memoryCache.isDirty();
+  output += `- Dirty files pending index: ${isDirty ? 'yes' : 'no'}\n`;
+
+  // Check layered structure
+  const layeredFiles = ['IDENTITY', 'PRINCIPLES', 'DECISIONS', 'FLOWS', 'ACTIVE_CONTEXT'] as const;
+  let layeredCount = 0;
+  for (const key of layeredFiles) {
+    if (await memoryFileExists(resolveMemoryPath(key))) layeredCount++;
+  }
+  output += `- Layered structure: ${layeredCount}/${layeredFiles.length} files\n`;
+
   return {
     content: [{ type: 'text', text: output }],
   };
