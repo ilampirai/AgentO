@@ -1,10 +1,10 @@
 ---
-description: Show AgentO status. Overview of all memory files, configuration, and current loop state.
+description: Show AgentO v6.0 status. Overview of memory layers, configuration, decisions, flows, and health metrics.
 ---
 
 # /agento:status
 
-Show AgentO status and overview.
+Show AgentO status and memory health.
 
 ## Usage
 
@@ -12,64 +12,27 @@ Show AgentO status and overview.
 /agento:status
 ```
 
-## Output
+## What It Shows
 
-```
-📊 **AgentO Status**
+Runs `agento_config { action: "status" }` which reports:
 
-⚙️ **Configuration**
-- Line limit: 500
-- Strict mode: ON
-- Auto-index: ON
-- Test framework: auto
-
-📚 **Functions Index**
-- Total functions: 147
-- Files indexed: 23
-
-📋 **Rules**
-- Total rules: 5
-- Enabled: 4
-
-🔍 **Discovery**
-- Areas explored: 12
-
-⚠️ **Attempts**
-- Total logged: 3
-- Blocked patterns: 1
-
-🔄 **Loop**
-- Status: Inactive
-
-📁 **Memory Files**
-- .agenticMemory/FUNCTIONS.md: ✅
-- .agenticMemory/RULES.md: ✅
-- .agenticMemory/ARCHITECTURE.md: ✅
-- .agenticMemory/DISCOVERY.md: ✅
-- .agenticMemory/ATTEMPTS.md: ✅
-- .agenticMemory/ERRORS.md: ✅
-- .agenticMemory/VERSIONS.md: ✅
-- .agenticMemory/DATASTRUCTURE.md: ✅
-```
-
-## Active Loop Status
-
-When a loop is running:
-
-```
-🔄 **Loop**
-- Status: ACTIVE
-- Task: Fix failing tests
-- Progress: 2/5
-```
+- **Configuration** — strict mode, auto-index, deferred index
+- **Functions Index** — total functions, files indexed
+- **Rules** — total rules, enabled count
+- **Discovery** — areas explored
+- **Attempts** — logged failures, blocked patterns
+- **Memory Health** (v6.0):
+  - Decision count
+  - Protected flow count
+  - Working memory token usage (vs budget)
+  - Dirty files pending index
+  - Layered structure completeness (soul/core/working/surface)
+- **Memory Files** — existence check for all layer files
 
 ## Use Cases
 
 - Verify AgentO is initialized
-- Check current configuration
-- See index coverage
-- Monitor loop progress
-- Troubleshoot issues
-
-
-
+- Check if migration to layered structure is needed
+- Monitor memory token usage
+- See if compaction is needed
+- Troubleshoot missing files

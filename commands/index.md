@@ -1,121 +1,57 @@
 ---
-description: Index the codebase. Scans all source files and extracts functions, classes, and builds flow graph.
+description: Index the codebase. Scans source files for functions, classes, data structures, routes. Builds flow graph. Post-index flow verification.
 ---
 
 # /agento:index
 
-Index or re-index the codebase with enhanced v5.0 features.
+Index or re-index the codebase with v6.0 features.
 
 ## Usage
 
 ```
-/agento:index [path] [options]
+/agento:index [options]
 ```
 
 ## Options
 
-- `--path <path>` - Directory to index (default: current directory)
-- `--force` - Re-index even if already indexed
+- `--path <path>` — Directory to index (default: current directory)
+- `--force` — Re-index even if already indexed
 
-## Examples
+## What It Does
 
-### Index Entire Project
+1. Scans code files (`.ts`, `.tsx`, `.js`, `.jsx`, `.py`, `.php`, `.go`, `.rs`, `.java`)
+2. Extracts functions, classes, methods (dynamic pattern system — 25 patterns, 8 languages)
+3. Extracts data structures (interfaces, types, enums, structs, models)
+4. Extracts routes (Express, FastAPI, Flask, NestJS, Next.js, Gin)
+5. Builds call graph with symbol IDs
+6. Cross-references types to functions that use them
+7. **Post-index flow verification** — checks protected flow files still exist
+8. **New file detection** — flags files not in any flow or decision
+9. Updates surface layer:
+   - `.agenticMemory/surface/FUNCTIONS.md`
+   - `.agenticMemory/surface/PROJECT_MAP.md`
+   - `.agenticMemory/surface/DATASTRUCTURE.md`
+   - `.agenticMemory/surface/FLOW_GRAPH.json`
+10. Updates working layer:
+    - `.agenticMemory/working/DISCOVERY.md`
+    - `.agenticMemory/working/ACTIVE_CONTEXT.md` (post-index observations)
+11. Updates core layer:
+    - `.agenticMemory/core/ARCHITECTURE.md`
 
-```
-/agento:index
-```
+## Incremental Indexing
 
-### Index Specific Directory
-
-```
-/agento:index src/services/
-/agento:index --path src/components/
-```
-
-### Force Re-index
-
-```
-/agento:index --force
-```
-
-## What It Does (v5.0 Enhanced)
-
-1. Scans all code files (`.ts`, `.tsx`, `.js`, `.jsx`, `.py`, `.php`, `.go`, `.rs`, `.java`)
-2. Extracts function signatures with parameters and return types
-3. **Extracts classes and methods**
-4. **Builds call graph** (what calls what)
-5. **Detects entry points** (server.ts, main.ts, index.ts, etc.)
-6. Updates `.agenticMemory/FUNCTIONS.md` - Function index
-7. **Generates `.agenticMemory/PROJECT_MAP.md`** - Unified project structure
-8. **Generates `.agenticMemory/FLOW_GRAPH.json`** - Full call graph with IDs
-9. Updates `.agenticMemory/DISCOVERY.md` with explored areas
-10. Updates `.agenticMemory/ARCHITECTURE.md` with structure
-
-## Output
-
-```
-✅ **Indexing Complete** (2.34s)
-
-📊 **Stats**
-- Files scanned: 45
-- Functions indexed: 147
-- Classes indexed: 23
-- Call graph edges: 312
-- Entry points: 3
-- Directories explored: 12
-- Total functions in index: 147
-
-📝 **Newly Indexed Files**
-- src/auth/login.ts
-- src/auth/register.ts
-- src/services/api.ts
-- ... and 42 more
-```
-
-## Generated Files
-
-### PROJECT_MAP.md
-Compact overview for LLM understanding:
-- Entry points
-- Module summaries
-- Class summaries
-- Top functions
-
-### FLOW_GRAPH.json
-Full call graph with unique IDs:
-- All functions, methods, classes with IDs
-- Call relationships (edges)
-- Entry point markers
-- Use with `agento_flow`, `agento_symbol`, `agento_entrypoints` tools
-
-## Skipped Directories
-
-These directories are automatically skipped:
-- `node_modules/`
-- `.git/`
-- `dist/`
-- `build/`
-- `.agenticMemory/`
+With `deferIndex: true` (default), `agento_write` marks files dirty. Running `agento_index` processes only dirty + new files. Use `--force` for full reindex.
 
 ## After Indexing
 
-Use the flow graph tools for efficient code understanding:
+Use flow graph tools for efficient code understanding:
 
 ```
-# Find entry points for a feature
-agento_entrypoints {query: "auth"}
-
-# Get call graph for specific functions
-agento_flow {ids: ["F123", "F456"], depth: 2}
-
-# Lookup function details
-agento_symbol {name: "getUser"}
+agento_entrypoints { query: "auth" }
+agento_flow { ids: [...], depth: 2 }
+agento_symbol { name: "getUser" }
 ```
 
-## Auto-Indexing
+## Skipped Directories
 
-With `autoIndex: true` in config (default), indexing happens automatically when:
-- Files are read with `agento_read`
-- Files are written with `agento_write`
-
-However, for full flow graph generation, run `agento_index` explicitly.
+`node_modules/`, `.git/`, `dist/`, `build/`, `.agenticMemory/`

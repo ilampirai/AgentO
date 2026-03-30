@@ -1,10 +1,10 @@
 ---
-description: Initialize AgentO in a project. Creates .agenticMemory folder and .claude/rules for tool enforcement.
+description: Initialize AgentO v6.0 in a project. Creates layered .agenticMemory structure and .claude/rules for tool enforcement.
 ---
 
 # /agento:init
 
-Initialize AgentO in your project.
+Initialize AgentO v6.0 in your project.
 
 ## Usage
 
@@ -16,72 +16,84 @@ Initialize AgentO in your project.
 
 ### Step 1: Create `.claude/rules/agento-tools.md`
 
-This rule forces Claude to use AgentO tools for ALL prompts:
+Copy the content from the plugin's `templates/.claude/rules/agento-tools.md`.
 
-```markdown
-# AgentO Tools (Mandatory)
+This forces Claude to:
+- Use AgentO tools instead of built-in equivalents
+- Start every session with `agento_memory { action: "resume", resume_action: "start" }`
+- Check decisions and flows before writing
+- Record significant architectural decisions
 
-**ALWAYS use AgentO MCP tools for file operations:**
+### Step 2: Initialize Memory
 
-| Operation | Required Tool |
-|-----------|---------------|
-| Write files | `agento_write` |
-| Read files | `agento_read` |
-| Run commands | `agento_bash` |
-| Run tests | `agento_test` |
-| Search code | `agento_search` |
-
-## Rules
-
-1. **NEVER** use built-in `Write` tool → use `agento_write`
-2. **NEVER** use built-in `Read` tool → use `agento_read`
-3. **NEVER** use built-in `Bash` tool → use `agento_bash`
-4. **NEVER** use built-in `Grep`/`Glob` tools → use `agento_search`
+```
+agento_memory { action: "init" }
 ```
 
-### Step 2: Create `.agenticMemory/` directory with these files:
+This creates the layered `.agenticMemory/` structure:
 
-- `FUNCTIONS.md` - Function index
-- `RULES.md` - Project rules  
-- `ARCHITECTURE.md` - Project structure
-- `DISCOVERY.md` - Exploration log
-- `ATTEMPTS.md` - Failed actions log
-- `ERRORS.md` - Known errors & solutions
-- `VERSIONS.md` - Dependency versions
-- `DATASTRUCTURE.md` - Data models
-- `config.json` - Settings
-- `LOOP_STATE.json` - Loop tracking
+```
+.agenticMemory/
+├── soul/           IDENTITY.md, PRINCIPLES.md
+├── core/           DECISIONS.md, FLOWS.md, shadow indexes
+├── working/        ACTIVE_CONTEXT.md, DISCOVERY.md, ATTEMPTS.md
+├── surface/        FUNCTIONS.md, DATASTRUCTURE.md, PROJECT_MAP.md, FLOW_GRAPH.json
+├── .branch-context/
+├── .archive/
+├── config.json
+└── RULES.md
+```
 
-Use template content from the plugin's `templates/` folder.
+### Step 3: Index the Codebase
 
-### Step 3: Confirm initialization
+```
+agento_index { force: true }
+```
 
-Reply: "✅ AgentO initialized. Tool enforcement rule active."
+Populates surface layer: FUNCTIONS.md, PROJECT_MAP.md, DATASTRUCTURE.md, FLOW_GRAPH.json.
+
+### Step 4: Confirm
+
+Reply: "AgentO v6.0 initialized. 4-layer memory active. 15 tools registered."
 
 ## After Init
 
-Just prompt normally — no `/agento` prefix needed:
+Prompt normally. No prefix needed:
 
 ```
-"Build a login page"           # agento_write enforces rules
-"Fix the auth bug"             # agento_read tracks discovery
-"Run tests and fix failures"   # agento_test runs with retry
+"Build a login page"
+"Fix the authentication bug"
+"Run tests and fix failures"
 ```
 
-The `.claude/rules/agento-tools.md` ensures AgentO tools are used automatically.
+The `.claude/rules/agento-tools.md` ensures AgentO tools are used automatically. The skill at `skills/agento/SKILL.md` teaches Claude the full memory-first workflow.
 
-## MCP Tools Available
+## Migration from v5.x
+
+If a flat `.agenticMemory/` already exists:
+
+```
+agento_memory { action: "migrate" }
+```
+
+Atomic migration: copies files to layers, verifies, generates IDENTITY.md.
+
+## MCP Tools (15)
 
 | Tool | Purpose |
 |------|---------|
-| agento_write | Write files with rule enforcement |
-| agento_read | Read files with tracking |
-| agento_bash | Execute commands safely |
-| agento_search | Smart codebase search with memory integration |
-| agento_rules | Manage project rules |
-| agento_functions | Query function index |
-| agento_index | Index the codebase |
-| agento_loop | Start iteration loops |
-| agento_test | Run tests with retry |
-| agento_config | View/edit configuration |
-
+| `agento_write` | Write with rule + decision + flow enforcement |
+| `agento_read` | Read with discovery tracking |
+| `agento_bash` | Safe command execution |
+| `agento_search` | Memory-first codebase search |
+| `agento_memory` | Session resume, migration, memory I/O |
+| `agento_rules` | Project rule management |
+| `agento_functions` | Function index queries |
+| `agento_index` | Full codebase indexer |
+| `agento_config` | Config + memory health |
+| `agento_entrypoints` | Feature entry point discovery |
+| `agento_flow` | Call graphs + flow protection |
+| `agento_symbol` | Symbol lookup |
+| `agento_patterns` | Extraction pattern management |
+| `agento_decide` | Decision tracking |
+| `agento_compact` | Memory compaction |

@@ -1,40 +1,41 @@
-# AgentO Project
+# AgentO Project (v6.0)
 
-This project uses AgentO v5.0. Use `/agento <prompt>` for tasks.
+This project uses AgentO v6.0 with 4-layer memory hierarchy.
 
-When `/agento` is used, all file operations must use:
-- `agento_write` (not Write)
-- `agento_read` (not Read)
-- `agento_bash` (not Bash)
-- `agento_search` (not Grep/Glob)
+## Session Lifecycle
 
-## 🧠 Code Understanding Tools (NEW in v5.0)
+**Start:** `agento_memory { action: "resume", resume_action: "start" }`
+**End:** `agento_memory { action: "resume", resume_action: "end", summary: "..." }`
 
-**ALWAYS use these tools for understanding code structure:**
+## Tool Routing
 
-1. **`agento_index`** - Index the codebase (run once, generates PROJECT_MAP.md and FLOW_GRAPH.json)
-2. **`agento_entrypoints`** - Find entry points for features (e.g., "auth", "cart")
-3. **`agento_flow`** - Get call graph subgraph for specific functions
-4. **`agento_symbol`** - Lookup function/class details by name or ID
+| Built-in | Use Instead |
+|----------|-------------|
+| Write | `agento_write` (checks rules + decisions + flows) |
+| Read | `agento_read` |
+| Bash | `agento_bash` |
+| Grep / Glob | `agento_search` |
 
-### Workflow Example:
+## Before Writing: Check Constraints
+
 ```
-User: "Add authentication"
-
-1. agento_entrypoints {query: "auth"} → Get entry point IDs
-2. agento_flow {ids: [...], depth: 2} → Get call graph
-3. agento_symbol {ids: [...]} → Get function details
-4. agento_read {path: "..."} → Read only needed files
-5. agento_write {path: "...", content: "..."} → Write changes
+agento_decide { action: "check", target_files: ["file.ts"] }
+agento_flow { protect_action: "check", target_file: "file.ts" }
 ```
 
-**Benefits:**
-- 90% token savings vs reading entire codebase
-- Clear understanding of code relationships
-- Fast navigation without file scanning
+## After Decisions: Record Them
 
-### ⚠️ If Function Not Found:
-1. **First**: `agento_index {force: true}` → Reindex codebase
-2. **Then**: Try `agento_symbol` or `agento_entrypoints` again
-3. **Finally**: If still not found, use `agento_search` and your thinking ability
-4. **Never skip the reindex step** - it's critical for finding recent code
+```
+agento_decide { action: "record", decision: "...", affected_files: [...] }
+```
+
+## Code Understanding
+
+```
+agento_entrypoints { query: "feature" }
+agento_flow { ids: [...], depth: 2 }
+agento_symbol { name: "func" }
+agento_read { path: "file.ts" }
+```
+
+If not found: `agento_index { force: true }` then retry.

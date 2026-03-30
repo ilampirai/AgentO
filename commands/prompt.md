@@ -1,10 +1,10 @@
 ---
-description: Execute a prompt using AgentO MCP tools. Ensures all file operations use agento_write, agento_read, agento_bash.
+description: Execute a prompt using AgentO v6.0 MCP tools. Memory-first workflow with decision tracking, flow protection, and session lifecycle.
 ---
 
 # /agento
 
-Execute a prompt with AgentO tools.
+Execute a prompt with AgentO's memory-first workflow.
 
 ## Usage
 
@@ -22,48 +22,78 @@ Execute a prompt with AgentO tools.
 
 ## What To Do
 
-For the given prompt, complete the task using ONLY these tools:
-
-| Operation | Tool |
-|-----------|------|
-| Write files | `agento_write` |
-| Read files | `agento_read` |
-| Run commands | `agento_bash` |
-| Run tests | `agento_test` |
-| Iterate fixes | `agento_loop` |
-| Search code | `agento_search` |
-| **Index codebase** | `agento_index` |
-| **Find entry points** | `agento_entrypoints` |
-| **Get flow graph** | `agento_flow` |
-| **Lookup symbols** | `agento_symbol` |
+For the given prompt, complete the task using ONLY AgentO tools.
 
 **Do NOT use built-in Write, Read, Bash, Grep, or Glob tools.**
 
-## 🧠 Code Understanding Workflow (v5.0)
+### Step 1: Load Session Context
 
-**BEFORE reading or modifying code:**
+```
+agento_memory { action: "resume", resume_action: "start" }
+```
 
-1. **For feature requests** (e.g., "add auth", "implement cart"):
-   - Use `agento_entrypoints {query: "auth"}` to find entry points
-   - Use `agento_flow {ids: [...], depth: 2}` to get call graph
-   - Use `agento_symbol {ids: [...]}` for function details
-   - **Only then** read specific files with `agento_read`
+### Step 2: Understand the Code (before modifying)
 
-2. **Benefits:**
-   - 90% token savings vs reading entire codebase
-   - Clear understanding of code relationships
-   - Fast navigation without file scanning
+```
+agento_entrypoints { query: "feature" }
+agento_flow { ids: [...], depth: 2, direction: "both" }
+agento_symbol { name: "functionName" }
+agento_read { path: "only-what-you-need.ts" }
+```
 
-3. **⚠️ If function not found:**
-   - **First**: Run `agento_index {force: true}` to reindex
-   - **Then**: Try `agento_symbol` or `agento_entrypoints` again
-   - **Finally**: If still not found, use `agento_search` and your thinking ability
-   - **Never skip the reindex step** - it's critical for finding recent code
+### Step 3: Check Constraints (before writing)
 
-The AgentO tools automatically:
-- Update memory files
-- Enforce project rules
-- Track functions and discoveries
-- **Provide efficient code understanding via flow graph**
+```
+agento_decide { action: "check", target_files: ["file.ts"] }
+agento_flow { protect_action: "check", target_file: "file.ts" }
+```
 
+### Step 4: Write with Enforcement
 
+```
+agento_write { path: "file.ts", content: "..." }
+```
+
+If blocked by conflict: `agento_write { path: "...", content: "...", force: true }`
+
+### Step 5: Record Significant Decisions
+
+```
+agento_decide { action: "record", decision: "...", affected_files: [...] }
+```
+
+### Step 6: Close Session
+
+```
+agento_memory { action: "resume", resume_action: "end", summary: "What was done" }
+```
+
+## Tool Reference
+
+| Operation | Tool |
+|-----------|------|
+| Write files | `agento_write` (rules + decisions + flows checked) |
+| Read files | `agento_read` |
+| Run commands | `agento_bash` |
+| Search code | `agento_search` |
+| Index codebase | `agento_index` |
+| Find entry points | `agento_entrypoints` |
+| Call graph / flow protection | `agento_flow` |
+| Lookup symbols | `agento_symbol` |
+| Track decisions | `agento_decide` |
+| Compact memory | `agento_compact` |
+| Manage rules | `agento_rules` |
+| Query functions | `agento_functions` |
+| Configuration | `agento_config` |
+| Manage patterns | `agento_patterns` |
+| Memory ops | `agento_memory` |
+
+## If Function Not Found
+
+```
+agento_index { force: true }
+agento_symbol { name: "functionName" }
+agento_search { query: "functionName" }
+```
+
+Never skip the reindex step.

@@ -73,7 +73,7 @@ Options:
 
 ## Rule Format
 
-Rules are stored in `.agenticMemory/RULES.md`:
+Rules are stored in `.agenticMemory/RULES.md` (root level, not layered):
 
 ```markdown
 ### [USR001] No console.log

@@ -103,7 +103,7 @@ Then read relevant files with `agento_read` to locate it manually.
 
 ## Format
 
-Functions are stored in `.agenticMemory/FUNCTIONS.md`:
+Functions are stored in `.agenticMemory/surface/FUNCTIONS.md`:
 
 ```markdown
 ## src/auth/login.ts
