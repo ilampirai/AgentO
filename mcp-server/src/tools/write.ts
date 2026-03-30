@@ -43,14 +43,7 @@ export async function handleWrite(args: unknown) {
   const config = await memoryCache.getConfig();
   const lines = content.split('\n').length;
 
-  // PRE-CHECK 1: Line count (only if lineLimit > 0)
-  if (config.lineLimit > 0 && lines > config.lineLimit) {
-    violations.push(
-      `⛔ LINE LIMIT: ${lines} lines (max ${config.lineLimit}). Split into smaller modules.`
-    );
-  }
-
-  // PRE-CHECK 2: User-defined rules
+  // User-defined rules (line limits enforced via rules, not hardcoded)
   const rules = await memoryCache.getRules();
   for (const rule of rules) {
     if (!rule.enabled) continue;

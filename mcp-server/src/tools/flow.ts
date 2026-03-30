@@ -85,7 +85,7 @@ export async function handleFlow(args: unknown) {
     const queue: Array<{ id: string; depth: number }> = [];
     
     // Initialize queue with starting nodes
-    for (const id of ids) {
+    for (const id of (ids || [])) {
       if (flowGraph.nodes[id]) {
         queue.push({ id, depth: 0 });
         visited.add(id);
